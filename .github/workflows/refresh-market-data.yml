@@ -27,7 +27,8 @@ jobs:
           python-version: "3.11"
 
       - name: Install data library
-        run: python -m pip install --upgrade pip "vnstock==5.0.1"
+      
+       run: python -m pip install --upgrade pip && python -m pip install --extra-index-url https://vnstocks.com/api/packages "vnstock==5.0.1"
 
       - name: Fetch daily OHLCV
         run: python scripts/refresh_market_data.py
