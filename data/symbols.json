@@ -1,0 +1,22 @@
+{
+  "stocks": [
+    "DHC",
+    "PC1",
+    "VIX",
+    "HDG",
+    "VHE",
+    "BVB",
+    "TTF",
+    "CMG",
+    "DRC",
+    "TPB",
+    "HNG",
+    "MST"
+  ],
+  "indices": [
+    "VNINDEX",
+    "HNXINDEX",
+    "UPCOMINDEX"
+  ],
+  "lookback": "1Y"
+}

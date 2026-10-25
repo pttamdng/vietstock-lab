@@ -1,0 +1,10 @@
+{
+  "updated_at": null,
+  "source": "Vnstock community / VCI-KBS",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "stocks": {},
+  "indices": {},
+  "errors": [
+    "Chưa chạy lần cập nhật dữ liệu đầu tiên trong GitHub Actions."
+  ]
+}
