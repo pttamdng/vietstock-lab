@@ -31,6 +31,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --extra-index-url https://vnstocks.com/api/packages "vnstock==5.2.0"
 
+      - name: Set Fixed Machine ID for Vnstock
+        run: |
+          # Khởi tạo machine-id cố định để tránh lỗi vượt quá số thiết bị trên Vnstock
+          echo "9f7b3240a2a14e3b8a1c5d6e7f8a9b0c" | sudo tee /etc/machine-id
+          echo "9f7b3240a2a14e3b8a1c5d6e7f8a9b0c" | sudo tee /var/lib/dbus/machine-id
+
       - name: Fetch daily OHLCV
         env:
           VNSTOCK_API_KEY: ${{ secrets.VNSTOCK_API_KEY }}
