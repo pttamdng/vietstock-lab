@@ -11,7 +11,57 @@ function initial(){return {stocks:[{symbol:'DHC',name:'Đông Hải Bến Tre',e
 function load(){try{let x=JSON.parse(localStorage.getItem(KEY));return x&&x.stocks?x:initial()}catch{return initial()}}let state=load();let deferredPrompt=null;function save(){localStorage.setItem(KEY,JSON.stringify(state))}function log(text){state.logs.unshift({date:new Date().toLocaleString('vi-VN'),text});state.logs=state.logs.slice(0,100);save();renderLogs()}
 function candles(sym){return (state.candles[sym]||[]).slice().sort((a,b)=>a.date.localeCompare(b.date))}function sma(a,n){return a.map((_,i)=>i+1<n?null:a.slice(i-n+1,i+1).reduce((s,v)=>s+v,0)/n)}function rsi(values,n=14){let out=Array(values.length).fill(null);if(values.length<=n)return out;let gain=0,loss=0;for(let i=1;i<=n;i++){let d=values[i]-values[i-1];gain+=Math.max(0,d);loss+=Math.max(0,-d)}let ag=gain/n,al=loss/n;out[n]=al===0?100:100-100/(1+ag/al);for(let i=n+1;i<values.length;i++){let d=values[i]-values[i-1];ag=(ag*(n-1)+Math.max(0,d))/n;al=(al*(n-1)+Math.max(0,-d))/n;out[i]=al===0?100:100-100/(1+ag/al)}return out}
 function metrics(sym){let a=candles(sym),cl=a.map(x=>+x.close),vol=a.map(x=>+x.volume),ma10=sma(cl,10),ma50=sma(cl,50),vma5=sma(vol,5),vma10=sma(vol,10),rs=rsi(cl);let i=a.length-1,last=a[i];let mean=cl.slice(-20).reduce((s,x)=>s+x,0)/Math.min(20,cl.length);let sd=Math.sqrt(cl.slice(-20).reduce((s,x)=>s+(x-mean)**2,0)/Math.min(20,cl.length));return {a,last,ma10:ma10[i],ma50:ma50[i],vma5:vma5[i],vma10:vma10[i],rsi:rs[i],bbMid:mean,bbUp:mean+2*sd,bbLow:mean-2*sd,prev:a[i-1],avgVol:vol.slice(-20).reduce((s,x)=>s+x,0)/Math.min(20,vol.length)}}
-function analyze(sym){let m=metrics(sym),x=m.last,p=m.prev;if(!x)return {tone:'warn',label:'Chưa có dữ liệu',text:'Nhập giá/khối lượng hoặc tải CSV trước khi phân tích.',signals:[]};let spread=x.high-x.low,body=Math.abs(x.close-x.open),volRatio=m.avgVol?x.volume/m.avgVol:1,closePos=spread?(x.close-x.low)/spread:.5;let signals=[];let tone='warn';let text='Dữ liệu chưa đủ để nhận diện cấu trúc Wyckoff đáng tin cậy.';if(m.a.length<5){text='Mới có ít phiên. Hãy nhập thêm dữ liệu lịch sử trước khi kết luận Wyckoff/VSA.'}else{if(x.close>x.open&&volRatio>1.25&&closePos>.7){signals.push('Nến tăng, đóng gần đỉnh và khối lượng cao: có thể là lực cầu/SOS, cần phiên sau xác nhận.');tone='good'}if(x.close<x.open&&volRatio>1.25&&closePos<.3){signals.push('Nến giảm, đóng gần đáy với khối lượng cao: cung chiếm ưu thế, cảnh giác SOW/phân phối.');tone='bad'}if(spread>0&&body/spread<.25&&volRatio<.75){signals.push('Thân nến hẹp, khối lượng thấp: cung/cầu tạm lắng; chưa phải tín hiệu mua nếu thiếu xác nhận.');tone='warn'}if(p&&x.low<p.low&&x.close>p.close&&closePos>.6){signals.push('Có thể là nhịp rũ bỏ nếu giá lấy lại vùng hỗ trợ và cung giảm ở phiên sau.');tone='good'}if(m.ma10&&x.close>m.ma10)signals.push('Giá trên MA10: động lượng ngắn hạn còn giữ được.');else if(m.ma10)signals.push('Giá dưới MA10: động lượng ngắn hạn yếu hơn.');if(m.ma50)signals.push(x.close>m.ma50?'Giá trên MA50: cấu trúc trung hạn tương đối thuận lợi.':'Giá dưới MA50: cần thận trọng với xu hướng trung hạn.');if(m.rsi!=null)signals.push(`RSI(14) ${m.rsi.toFixed(1)}: ${m.rsi>70?'quá mua, tránh đuổi giá':m.rsi<30?'quá bán, chờ xác nhận hồi':'chưa vào vùng cực đoan'}.`);text=signals.length?signals.join(' '):'Chưa thấy tín hiệu nến/khối lượng nổi bật theo bộ quy tắc đơn giản.'}return {tone,label:tone==='good'?'Tích cực có điều kiện':tone==='bad'?'Cung chiếm ưu thế':'Chờ xác nhận',text,signals,m}}
+function analyze(sym){
+ let m=metrics(sym),x=m.last,p=m.prev;
+ if(!x)return {tone:'warn',label:'Chưa có dữ liệu',text:'Mã này chưa có OHLCV. Hãy chạy cập nhật dữ liệu GitHub Actions hoặc nhập CSV.',signals:[],m};
+ const a=m.a,signals=[],n=a.length,spread=Math.max(0,x.high-x.low),body=Math.abs(x.close-x.open),closePos=spread?(x.close-x.low)/spread:.5;
+ const volRatio=m.avgVol>0?x.volume/m.avgVol:null,prev20=a.slice(Math.max(0,n-21),Math.max(0,n-1));
+ const priorLow=prev20.length?Math.min(...prev20.map(z=>z.low)):null,priorHigh=prev20.length?Math.max(...prev20.map(z=>z.high)):null;
+ const avgSpread=prev20.length?prev20.reduce((s,z)=>s+Math.max(0,z.high-z.low),0)/prev20.length:0;
+ let tone='warn',label='Chờ xác nhận';
+ if(n<20){
+   return {tone,label:'Dữ liệu chưa đủ',text:`Hiện có ${n} phiên; nên có ít nhất 20 phiên để so sánh vùng giá và khối lượng. Không kết luận Spring/Upthrust khi thiếu bối cảnh.`,signals:['Bổ sung dữ liệu lịch sử trước khi đánh giá cấu trúc Wyckoff.'],m};
+ }
+ const sensitivity=state.settings.sensitivity||'normal';
+ const highVol=volRatio!==null&&volRatio>=(sensitivity==='strict'?1.5:1.25);
+ const lowVol=volRatio!==null&&volRatio<=(sensitivity==='strict'?.65:.75);
+ const wideSpread=avgSpread>0&&spread>=avgSpread*(sensitivity==='strict'?1.4:1.2);
+ // Spring candidate: breaks recent support, closes back above it, preferably with muted volume.
+ if(x.low<priorLow&&x.close>priorLow&&closePos>.55){
+   signals.push(`ỨNG VIÊN SPRING: giá xuyên đáy vùng ${fmtPrice(priorLow)} rồi đóng trở lại phía trên. ${lowVol?'Khối lượng thấp tương đối, phù hợp giả thuyết hấp thụ cung.':'Khối lượng chưa thấp rõ rệt; cần phiên sau xác nhận.'} Xác nhận: giữ được vùng vừa lấy lại và có nhịp tăng tiếp diễn.`);
+   tone='good';label='Ứng viên Spring';
+ }
+ // Upthrust candidate: breaks recent resistance and closes back below it.
+ if(x.high>priorHigh&&x.close<priorHigh&&closePos<.6){
+   signals.push(`ỨNG VIÊN UPTHRUST: giá vượt đỉnh vùng ${fmtPrice(priorHigh)} nhưng đóng lại bên dưới. ${highVol?'Khối lượng cao, cần cảnh giác lực cung/phá vỡ thất bại.':'Khối lượng chưa xác nhận rõ.'} Xác nhận tiêu cực: phiên sau không lấy lại được vùng breakout.`);
+   tone='bad';label='Ứng viên Upthrust';
+ }
+ // SOS: wide bullish spread, closes near high, volume above average and/or breaks resistance.
+ if(x.close>x.open&&closePos>=.75&&wideSpread&&highVol&&(x.close>priorHigh||!signals.length)){
+   signals.push(`ỨNG VIÊN SOS: nến tăng biên độ rộng, đóng gần đỉnh, khối lượng ${fmt(volRatio,2)}× trung bình và ${x.close>priorHigh?'đóng vượt vùng đỉnh gần đây.':'chưa vượt rõ vùng đỉnh gần đây.'} Chờ retest/LPS với khối lượng co lại để xác nhận.`);
+   if(!signals.some(s=>s.includes('UPTHRUST'))){tone='good';label='Ứng viên SOS'}
+ }
+ // SOW: wide bearish spread, closes near low, high volume and/or support breakdown.
+ if(x.close<x.open&&closePos<=.25&&wideSpread&&highVol&&(x.close<priorLow||!signals.length)){
+   signals.push(`ỨNG VIÊN SOW: nến giảm biên độ rộng, đóng gần đáy, khối lượng ${fmt(volRatio,2)}× trung bình và ${x.close<priorLow?'đóng thủng đáy vùng gần đây.':'chưa thủng rõ vùng hỗ trợ gần đây.'} Cảnh giác nhịp hồi yếu/LPSY.`);
+   tone='bad';label='Ứng viên SOW';
+ }
+ if(lowVol&&spread>0&&body/spread<.35){
+   signals.push(`NO SUPPLY/THIẾU CẦU TIỀM NĂNG: biên độ hẹp và khối lượng chỉ ${fmt(volRatio,2)}× trung bình. Cần xem vị trí: khối lượng thấp sau nhịp giảm có thể là thiếu cung; sau nhịp tăng có thể là thiếu cầu. Không tự động coi là tín hiệu mua.`);
+ }
+ if(highVol&&spread>0&&body/spread<.25){
+   signals.push('Nến thân hẹp với khối lượng cao: có thể có hấp thụ hoặc xung đột cung/cầu; cần xem vị trí đóng cửa và phản ứng phiên sau, chưa đủ kết luận.');
+ }
+ if(p&&x.low<p.low&&x.close>p.close&&closePos>.6&&x.low>=priorLow){
+   signals.push('Có dấu hiệu rũ bỏ trong ngày, nhưng chưa phá đáy vùng đủ rõ để gọi là Spring. Theo dõi khả năng kiểm định cung.');
+ }
+ if(m.ma10)signals.push(x.close>m.ma10?'Giá trên MA10: động lượng ngắn hạn đang giữ.':'Giá dưới MA10: động lượng ngắn hạn yếu hơn.');
+ if(m.ma50)signals.push(x.close>m.ma50?'Giá trên MA50: xu hướng trung hạn thuận lợi hơn.':'Giá dưới MA50: cấu trúc trung hạn cần thận trọng.');
+ if(m.rsi!=null)signals.push(`RSI(14) ${m.rsi.toFixed(1)}: ${m.rsi>70?'vùng quá mua, tránh đuổi giá':m.rsi<30?'vùng quá bán, vẫn cần xác nhận giá/khối lượng':'chưa ở vùng cực đoan'}.`);
+ if(!signals.length)signals.push('Chưa có tín hiệu Wyckoff/VSA nổi bật theo quy tắc sàng lọc. Kiểm tra cấu trúc nền, hỗ trợ/kháng cự và hành vi các phiên kế tiếp.');
+ const text=signals.join(' ');
+ return {tone,label,text,signals,m};
+}
 function fmtPrice(n){return n==null?'—':fmt(n,2)}function activeSymbol(){return $('analysisSymbol')?.value||state.stocks[0]?.symbol}function fillSelect(id,val){let el=$(id);if(!el)return;let old=val||el.value;el.innerHTML=state.stocks.map(s=>`<option value="${s.symbol}">${s.symbol}</option>`).join('');if(state.stocks.some(s=>s.symbol===old))el.value=old}
 function render(){fillAllSelects();renderDashboard();renderAnalysis();renderPortfolio();renderAlerts();renderLogs();$('budget').value=state.settings.budget||'';$('riskPct').value=state.settings.riskPct||2;$('investorName').value=state.settings.investorName||'';$('vsaSensitivity').value=state.settings.sensitivity||'normal';$('apiEndpoint').value=state.settings.apiEndpoint||'';if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});}
 function fillAllSelects(){['analysisSymbol','candleSymbol','pSymbol','aSymbol'].forEach(id=>fillSelect(id,id==='analysisSymbol'?state.selectedSymbol:undefined));if($('analysisSymbol')&&!state.stocks.some(s=>s.symbol===$('analysisSymbol').value))$('analysisSymbol').value=state.stocks[0]?.symbol||''}
