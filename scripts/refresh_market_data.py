@@ -116,8 +116,17 @@ def fetch_one(market, symbol, kind, length, errors):
 
 def main():
     from vnstock import Market
+   
+    import os
+    import vnstock
 
+    api_key = os.environ.get("VNSTOCK_API_KEY")
+    if not api_key:
+    raise RuntimeError("Missing VNSTOCK_API_KEY GitHub secret")
+
+    vnstock.login(api_key)
     market = Market()
+
     length = CONFIG.get("lookback", "1Y")
     stocks, indices, errors = {}, {}, []
 
