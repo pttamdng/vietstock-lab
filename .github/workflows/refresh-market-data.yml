@@ -32,7 +32,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --extra-index-url https://vnstocks.com/api/packages "vnstock==5.2.0"
           
+      - 
       - name: Fetch daily OHLCV
+        env:
+          VNSTOCK_API_KEY: ${{ secrets.VNSTOCK_API_KEY }}
         run: python scripts/refresh_market_data.py
 
       - name: Commit updated data file
