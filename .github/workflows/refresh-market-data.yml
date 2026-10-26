@@ -42,14 +42,28 @@ jobs:
           VNSTOCK_API_KEY: ${{ secrets.VNSTOCK_API_KEY }}
         run: python scripts/refresh_market_data.py
 
+      
       - name: Commit updated data file
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add data/market.json
+
           if git diff --cached --quiet; then
             echo "No market data changes to commit."
-          else
+            exit 0
+          fi
+
+          git commit -m "Update daily market data"
+
+          # Lấy commit mới nhất trên GitHub và đặt commit dữ liệu lên trên.
+          git fetch origin main
+          git rebase origin/main
+
+          # Đẩy thay đổi lên GitHub.
+          git push origin HEAD:main
+
             git commit -m "Update daily market data"
             git push
           fi
