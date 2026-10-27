@@ -23,26 +23,33 @@ jobs:
         with:
           script: |
             const title = context.payload.issue.title;
-            const match = title.match(/^\[VietStockLab Watchlist\]\s+(ADD|REMOVE)\s+([A-Z0-9]{2,6})$/);
+            const match = title.match(/^\\[VietStockLab Watchlist\\]\\s+(ADD|REMOVE)\\s+([A-Z0-9]{2,6})$/);
             if (!match) {
               core.setFailed('Issue title must be: [VietStockLab Watchlist] ADD TICKER or REMOVE TICKER');
               return;
             }
             const [, action, symbol] = match;
+            const body = context.payload.issue.body || '';
+            const exchangeMatch = body.match(/^Sàn:\\s*(HOSE|HNX|UPCOM)\\s*$/im);
+            const exchange = exchangeMatch ? exchangeMatch[1].toUpperCase() : null;
             const fs = require('fs');
             const path = 'data/symbols.json';
             const config = JSON.parse(fs.readFileSync(path, 'utf8'));
-            const before = config.stocks.length;
+            config.exchanges = config.exchanges || {};
+            const before = JSON.stringify(config);
             if (action === 'ADD') {
               if (!config.stocks.includes(symbol)) config.stocks.push(symbol);
+              if (exchange) config.exchanges[symbol] = exchange;
             } else {
               config.stocks = config.stocks.filter(s => s !== symbol);
+              delete config.exchanges[symbol];
             }
             config.stocks = [...new Set(config.stocks)].sort();
-            fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
-            core.setOutput('changed', String(before !== config.stocks.length || action === 'ADD' && !config.stocks.includes(symbol)));
+            fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\\n');
+            core.setOutput('changed', String(before !== JSON.stringify(config)));
             core.setOutput('symbol', symbol);
             core.setOutput('action', action);
+            core.setOutput('exchange', exchange || config.exchanges[symbol] || 'HOSE');
 
       - name: Commit synchronized watchlist
         run: |
