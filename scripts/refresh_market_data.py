@@ -18,8 +18,11 @@ MAX_PAGES = 20
 
 # CafeF requires an exchange for this endpoint. Add symbols here if they are
 # listed on HNX/UPCoM rather than HOSE.
+DEFAULT_EXCHANGE = "HOSE"
 EXCHANGE_BY_SYMBOL = {
     "BVB": "UPCOM",
+    "VHE": "UPCOM",
+    "HNG": "UPCOM",
     "MST": "HNX",
 }
 
@@ -159,11 +162,20 @@ def main():
     errors = []
 
     symbols = config.get("stocks", [])
+    exchange_config = {
+        str(key).strip().upper(): str(value).strip().upper()
+        for key, value in (config.get("exchanges") or {}).items()
+    }
     for symbol in symbols:
         symbol = str(symbol).strip().upper()
         if not symbol:
             continue
-        exchange = EXCHANGE_BY_SYMBOL.get(symbol, "HOSE")
+        exchange = exchange_config.get(
+            symbol, EXCHANGE_BY_SYMBOL.get(symbol, DEFAULT_EXCHANGE)
+        )
+        if exchange not in {"HOSE", "HNX", "UPCOM"}:
+            print(f"WARNING: unknown exchange {exchange} for {symbol}; using HOSE")
+            exchange = DEFAULT_EXCHANGE
         try:
             print(f"Fetching {symbol} from CafeF ({exchange}), {start_date} to {end_date}")
             rows = fetch_history(symbol, exchange, start_date, end_date)
