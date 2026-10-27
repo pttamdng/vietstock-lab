@@ -18,5 +18,19 @@
     "HNXINDEX",
     "UPCOMINDEX"
   ],
-  "lookback": "1Y"
+  "lookback": "1Y",
+  "exchanges": {
+    "DHC": "HOSE",
+    "PC1": "HOSE",
+    "VIX": "HOSE",
+    "HDG": "HOSE",
+    "VHE": "HOSE",
+    "BVB": "UPCOM",
+    "TTF": "HOSE",
+    "CMG": "HOSE",
+    "DRC": "HOSE",
+    "TPB": "HOSE",
+    "HNG": "HOSE",
+    "MST": "HNX"
+  }
 }
