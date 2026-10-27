@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-27T11:17:15.633888+07:00",
+  "updated_at": "2026-10-27T11:20:48.550804+07:00",
   "source": "CafeF PriceHistory API",
   "timezone": "Asia/Ho_Chi_Minh",
   "lookback_start": "2025-10-27",
@@ -3981,9 +3981,9 @@
         "open": 0.0,
         "high": 0.0,
         "low": 1762.88,
-        "close": 1766.16,
-        "adjusted_close": 1766.16,
-        "volume": 209943341.0,
+        "close": 1764.65,
+        "adjusted_close": 1764.65,
+        "volume": 214668207.0,
         "value": 0.0,
         "negotiated_volume": 0.0,
         "negotiated_value": 0.0
