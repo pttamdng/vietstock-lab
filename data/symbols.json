@@ -1,17 +1,18 @@
 {
   "stocks": [
-    "DHC",
-    "PC1",
-    "VIX",
-    "HDG",
-    "VHE",
+    "AAA",
     "BVB",
-    "TTF",
     "CMG",
+    "DHC",
     "DRC",
-    "TPB",
+    "HDG",
     "HNG",
-    "MST"
+    "MST",
+    "PC1",
+    "TPB",
+    "TTF",
+    "VHE",
+    "VIX"
   ],
   "indices": [
     "VNINDEX",
@@ -31,6 +32,7 @@
     "DRC": "HOSE",
     "TPB": "HOSE",
     "HNG": "HOSE",
-    "MST": "HNX"
+    "MST": "HNX",
+    "AAA": "HOSE"
   }
 }
