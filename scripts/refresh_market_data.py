@@ -16,8 +16,8 @@ BASE_URL = "https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx"
 PAGE_SIZE = 100
 MAX_PAGES = 20
 
-# CafeF requires an exchange for this endpoint. Add symbols here if they are
-# listed on HNX/UPCoM rather than HOSE.
+# Fallback only. Preferred exchange mapping lives in data/symbols.json
+# so newly added watchlist symbols retain the exchange selected in the app.
 EXCHANGE_BY_SYMBOL = {
     "BVB": "UPCOM",
     "MST": "HNX",
@@ -159,11 +159,22 @@ def main():
     errors = []
 
     symbols = config.get("stocks", [])
+    configured_exchanges = {
+        str(symbol).strip().upper(): str(exchange).strip().upper()
+        for symbol, exchange in (config.get("exchanges") or {}).items()
+    }
+    valid_exchanges = {"HOSE", "HNX", "UPCOM"}
     for symbol in symbols:
         symbol = str(symbol).strip().upper()
         if not symbol:
             continue
-        exchange = EXCHANGE_BY_SYMBOL.get(symbol, "HOSE")
+        exchange = configured_exchanges.get(
+            symbol, EXCHANGE_BY_SYMBOL.get(symbol, "HOSE")
+        )
+        if exchange not in valid_exchanges:
+            errors.append(f"{symbol}: sàn không hợp lệ '{exchange}', bỏ qua mã.")
+            print(f"SOURCE ERROR: {symbol}: invalid exchange '{exchange}'")
+            continue
         try:
             print(f"Fetching {symbol} from CafeF ({exchange}), {start_date} to {end_date}")
             rows = fetch_history(symbol, exchange, start_date, end_date)
