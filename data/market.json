@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-10-28T17:54:19.676357+07:00",
+  "updated_at": "2026-10-29T12:54:09.752538+07:00",
   "source": "CafeF PriceHistory API",
   "timezone": "Asia/Ho_Chi_Minh",
-  "lookback_start": "2025-10-28",
-  "lookback_end": "2026-10-28",
+  "lookback_start": "2025-10-29",
+  "lookback_end": "2026-10-29",
   "stocks": {
     "AAA": [
       {
@@ -3991,18 +3991,6 @@
   "indices": {
     "VNINDEX": [
       {
-        "date": "2026-09-17",
-        "open": 1802.79,
-        "high": 1830.35,
-        "low": 1801.42,
-        "close": 1822.77,
-        "adjusted_close": 1822.77,
-        "volume": 600956100.0,
-        "value": 15179.61,
-        "negotiated_volume": 114323936.0,
-        "negotiated_value": 2596.61
-      },
-      {
         "date": "2026-09-18",
         "open": 1835.32,
         "high": 1841.2,
@@ -4345,10 +4333,22 @@
         "low": 1753.95,
         "close": 1766.65,
         "adjusted_close": 1766.65,
-        "volume": 511937500.0,
-        "value": 12167.03,
-        "negotiated_volume": 123525871.0,
-        "negotiated_value": 2586.77
+        "volume": 576521600.0,
+        "value": 12225.28,
+        "negotiated_volume": 146872495.0,
+        "negotiated_value": 3117.45
+      },
+      {
+        "date": "2026-10-29",
+        "open": 0.0,
+        "high": 0.0,
+        "low": 1754.53,
+        "close": 1754.53,
+        "adjusted_close": 1754.53,
+        "volume": 355984606.0,
+        "value": 0.0,
+        "negotiated_volume": 0.0,
+        "negotiated_value": 0.0
       }
     ]
   },
