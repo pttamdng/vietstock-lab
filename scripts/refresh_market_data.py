@@ -13,8 +13,8 @@ CONFIG_PATH = ROOT / "data" / "symbols.json"
 OUTPUT_PATH = ROOT / "data" / "market.json"
 TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
 BASE_URL = "https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx"
-PAGE_SIZE = 100
-MAX_PAGES = 20
+PAGE_SIZE = 30
+MAX_PAGES = 30
 
 # Fallback only. Preferred exchange mapping lives in data/symbols.json
 # so newly added watchlist symbols retain the exchange selected in the app.
