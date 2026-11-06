@@ -27,7 +27,9 @@ Cách này tránh phụ thuộc file Power Query trên máy cá nhân và tránh
 Mỗi nến có:
 - `date`: ngày giao dịch `YYYY-MM-DD`
 - `open`, `high`, `low`, `close`: OHLC gốc từ CafeF
-- `adjusted_close`: giá điều chỉnh của CafeF, lưu riêng, không thay thế `close`
+- `adjusted_close`: giá đóng cửa điều chỉnh của CafeF; app dùng tỷ lệ `adjusted_close / close` để quy đổi đồng bộ OHLC lịch sử cho phân tích kỹ thuật.
+- Giá raw (`open/high/low/close`) vẫn được giữ để hiển thị giá giao dịch, tính giá trị vị thế và kích hoạt cảnh báo theo giá thực tế.
+- Khối lượng vẫn là khối lượng khớp lệnh raw; cần thận trọng khi so sánh qua sự kiện chia tách/cổ tức cổ phiếu vì chưa có hệ số điều chỉnh khối lượng riêng.
 - `volume`: khối lượng khớp lệnh
 - `value`, `negotiated_volume`, `negotiated_value`: các trường bổ sung
 
