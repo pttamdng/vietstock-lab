@@ -12,7 +12,9 @@
     "TPB",
     "TTF",
     "VHE",
-    "VIX"
+    "VIX",
+    "HPG",
+    "FPT"
   ],
   "indices": [
     "VNINDEX",
@@ -33,6 +35,8 @@
     "TPB": "HOSE",
     "HNG": "HOSE",
     "MST": "HNX",
-    "AAA": "HOSE"
+    "AAA": "HOSE",
+    "HPG": "HOSE",
+    "FPT": "HOSE"
   }
 }
