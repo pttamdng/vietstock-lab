@@ -25,8 +25,25 @@ EXCHANGE_BY_SYMBOL = {
 
 
 def load_config():
-    with CONFIG_PATH.open("r", encoding="utf-8") as file:
-        return json.load(file)
+    # Private Cloudflare Worker is the live source of the user's watchlist.
+    # data/symbols.json is retained as a bootstrap reference, not the active list.
+    worker_url = "https://vietstock-portfolio-syncolio-sync.pttamdng.workers.dev/"
+    request = Request(worker_url, headers={"User-Agent": "VietStock-Lab-CafeF-Refresh"})
+    with urlopen(request, timeout=30) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    watchlist = payload.get("watchlist") or {}
+    stocks = watchlist.get("stocks")
+    exchanges = watchlist.get("exchanges")
+    if not isinstance(stocks, list) or not isinstance(exchanges, dict):
+        raise RuntimeError("Cloudflare Worker chưa trả về watchlist hợp lệ; dừng để tránh tải sai danh sách.")
+    clean = []
+    for symbol in stocks:
+        symbol = str(symbol).strip().upper()
+        if not symbol or symbol in clean:
+            raise RuntimeError(f"Watchlist có mã rỗng hoặc trùng: {symbol!r}")
+        clean.append(symbol)
+    print(f"Loaded private watchlist from GitHub: {', '.join(clean) if clean else '(empty)'}")
+    return {"stocks": clean, "exchanges": exchanges, "indices": ["VNINDEX", "HNXINDEX", "UPCOMINDEX"]}
 
 
 def as_float(value):
