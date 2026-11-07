@@ -163,8 +163,15 @@ document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',(
     const r=await fetch(PORTFOLIO_WORKER,{cache:'no-store'}),d=await r.json();
     if(!r.ok)throw new Error(d.detail||d.error||'Không đọc được kho riêng tư');
     const remote=d.watchlist;
-    if(remote&&remote.last_request_id===queued.request_id){
-     const msg='GitHub đã xác nhận danh sách theo dõi ('+stocks.length+' mã): '+(stocks.join(', ')||'trống')+'. Danh sách này sẽ được CafeF sử dụng ở lần cập nhật dữ liệu kế tiếp.';
+    const currentStocks=state.stocks.map(s=>s.symbol);
+    const currentExchanges=Object.fromEntries(state.stocks.map(s=>[s.symbol,['HOSE','HNX','UPCOM'].includes(s.exchange)?s.exchange:'HOSE']));
+    const sameList=remote&&JSON.stringify(remote.stocks)===JSON.stringify(currentStocks);
+    const sameExchanges=remote&&JSON.stringify(Object.fromEntries(Object.entries(remote.exchanges||{}).sort()))===JSON.stringify(Object.fromEntries(Object.entries(currentExchanges).sort()));
+    // Concurrent add/remove actions may be coalesced by Actions into the newest
+    // snapshot. Confirm the actual current list as well as the request id.
+    if(remote&&(remote.last_request_id===queued.request_id||(sameList&&sameExchanges))){
+     const confirmedStocks=remote.stocks||currentStocks;
+     const msg='GitHub đã xác nhận danh sách theo dõi ('+confirmedStocks.length+' mã): '+confirmedStocks.join(', ')+'. Danh sách này đã được lưu; CafeF sẽ sử dụng ở lần cập nhật dữ liệu kế tiếp.';
      log(msg);toast('Đã đồng bộ danh sách theo dõi lên GitHub.');return true;
     }
    }catch(err){last=err.message}
