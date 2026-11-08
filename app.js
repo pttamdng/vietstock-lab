@@ -151,6 +151,7 @@ function chartOptions(){try{return JSON.parse(localStorage.getItem('vsl_chart_op
 function drawProfessionalChart(canvas,all){
  if(!canvas)return;
  const opt={ma10:true,ma20:true,ma50:true,bb:false,volume:true,rsi:true,macd:false,wyckoff:true,levels:false,...chartOptions()};
+ canvas.style.height=(430+['volume','rsi','macd'].filter(k=>opt[k]).length*65)+'px';
  const panels=['volume','rsi','macd'].filter(k=>opt[k]),h=canvas.clientHeight||560,w=canvas.clientWidth||340,dpr=window.devicePixelRatio||1;
  canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
  const c=canvas.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);
