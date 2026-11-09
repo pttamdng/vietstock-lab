@@ -1,23 +1,11 @@
 {
-  "updated_at": "2026-11-07T19:11:57.415436+07:00",
+  "updated_at": "2026-11-09T18:08:06.801632+07:00",
   "source": "CafeF PriceHistory API",
   "timezone": "Asia/Ho_Chi_Minh",
-  "lookback_start": "2025-11-07",
-  "lookback_end": "2026-11-07",
+  "lookback_start": "2025-11-09",
+  "lookback_end": "2026-11-09",
   "stocks": {
     "DHC": [
-      {
-        "date": "2025-11-07",
-        "open": 34.0,
-        "high": 34.0,
-        "low": 32.6,
-        "close": 32.85,
-        "adjusted_close": 28.33,
-        "volume": 314100.0,
-        "value": 10.35,
-        "negotiated_volume": 0.0,
-        "negotiated_value": 0.0
-      },
       {
         "date": "2025-11-10",
         "open": 32.8,
@@ -2957,21 +2945,21 @@
         "value": 13.82,
         "negotiated_volume": 0.0,
         "negotiated_value": 0.0
+      },
+      {
+        "date": "2026-11-09",
+        "open": 36.5,
+        "high": 36.75,
+        "low": 36.0,
+        "close": 36.4,
+        "adjusted_close": 36.4,
+        "volume": 325500.0,
+        "value": 11.86,
+        "negotiated_volume": 0.0,
+        "negotiated_value": 0.0
       }
     ],
     "PC1": [
-      {
-        "date": "2025-11-07",
-        "open": 24.75,
-        "high": 24.95,
-        "low": 24.15,
-        "close": 24.25,
-        "adjusted_close": 18.34,
-        "volume": 2096900.0,
-        "value": 51.61,
-        "negotiated_volume": 0.0,
-        "negotiated_value": 0.0
-      },
       {
         "date": "2025-11-10",
         "open": 24.25,
@@ -5911,21 +5899,21 @@
         "value": 9.28,
         "negotiated_volume": 0.0,
         "negotiated_value": 0.0
+      },
+      {
+        "date": "2026-11-09",
+        "open": 16.45,
+        "high": 16.7,
+        "low": 16.45,
+        "close": 16.5,
+        "adjusted_close": 16.5,
+        "volume": 609500.0,
+        "value": 10.09,
+        "negotiated_volume": 4390000.0,
+        "negotiated_value": 72.22
       }
     ],
     "VIX": [
-      {
-        "date": "2025-11-07",
-        "open": 26.25,
-        "high": 26.65,
-        "low": 24.5,
-        "close": 24.5,
-        "adjusted_close": 19.71,
-        "volume": 32217700.0,
-        "value": 826.84,
-        "negotiated_volume": 358000.0,
-        "negotiated_value": 9.64
-      },
       {
         "date": "2025-11-10",
         "open": 24.35,
@@ -8865,21 +8853,21 @@
         "value": 1246.62,
         "negotiated_volume": 3325000.0,
         "negotiated_value": 41.39
+      },
+      {
+        "date": "2026-11-09",
+        "open": 13.35,
+        "high": 13.4,
+        "low": 12.85,
+        "close": 13.0,
+        "adjusted_close": 13.0,
+        "volume": 42014600.0,
+        "value": 548.58,
+        "negotiated_volume": 0.0,
+        "negotiated_value": 0.0
       }
     ],
     "AAA": [
-      {
-        "date": "2025-11-07",
-        "open": 8.12,
-        "high": 8.14,
-        "low": 7.93,
-        "close": 7.95,
-        "adjusted_close": 7.62,
-        "volume": 1041500.0,
-        "value": 8.36,
-        "negotiated_volume": 0.0,
-        "negotiated_value": 0.0
-      },
       {
         "date": "2025-11-10",
         "open": 7.95,
@@ -11819,6 +11807,18 @@
         "value": 10.06,
         "negotiated_volume": 0.0,
         "negotiated_value": 0.0
+      },
+      {
+        "date": "2026-11-09",
+        "open": 6.95,
+        "high": 7.0,
+        "low": 6.94,
+        "close": 6.99,
+        "adjusted_close": 6.99,
+        "volume": 1927400.0,
+        "value": 13.41,
+        "negotiated_volume": 0.0,
+        "negotiated_value": 0.0
       }
     ],
     "BVB": [
@@ -12733,21 +12733,21 @@
         "value": 5.91,
         "negotiated_volume": 0.0,
         "negotiated_value": 0.0
+      },
+      {
+        "date": "2026-11-09",
+        "open": 10.45,
+        "high": 10.5,
+        "low": 10.3,
+        "close": 10.35,
+        "adjusted_close": 10.35,
+        "volume": 404200.0,
+        "value": 4.2,
+        "negotiated_volume": 0.0,
+        "negotiated_value": 0.0
       }
     ],
     "CMG": [
-      {
-        "date": "2025-11-07",
-        "open": 39.8,
-        "high": 39.95,
-        "low": 38.5,
-        "close": 38.85,
-        "adjusted_close": 35.32,
-        "volume": 598300.0,
-        "value": 23.47,
-        "negotiated_volume": 0.0,
-        "negotiated_value": 0.0
-      },
       {
         "date": "2025-11-10",
         "open": 38.9,
@@ -15687,21 +15687,21 @@
         "value": 4.97,
         "negotiated_volume": 0.0,
         "negotiated_value": 0.0
+      },
+      {
+        "date": "2026-11-09",
+        "open": 17.8,
+        "high": 18.0,
+        "low": 17.2,
+        "close": 17.55,
+        "adjusted_close": 17.55,
+        "volume": 248400.0,
+        "value": 4.37,
+        "negotiated_volume": 0.0,
+        "negotiated_value": 0.0
       }
     ],
     "DRC": [
-      {
-        "date": "2025-11-07",
-        "open": 15.6,
-        "high": 15.75,
-        "low": 15.4,
-        "close": 15.4,
-        "adjusted_close": 14.79,
-        "volume": 207400.0,
-        "value": 3.22,
-        "negotiated_volume": 0.0,
-        "negotiated_value": 0.0
-      },
       {
         "date": "2025-11-10",
         "open": 15.45,
@@ -18641,21 +18641,21 @@
         "value": 1.46,
         "negotiated_volume": 0.0,
         "negotiated_value": 0.0
+      },
+      {
+        "date": "2026-11-09",
+        "open": 8.98,
+        "high": 8.98,
+        "low": 8.88,
+        "close": 8.91,
+        "adjusted_close": 8.91,
+        "volume": 113400.0,
+        "value": 1.01,
+        "negotiated_volume": 0.0,
+        "negotiated_value": 0.0
       }
     ],
     "HDG": [
-      {
-        "date": "2025-11-07",
-        "open": 31.1,
-        "high": 31.4,
-        "low": 30.0,
-        "close": 30.2,
-        "adjusted_close": 26.96,
-        "volume": 2492900.0,
-        "value": 76.36,
-        "negotiated_volume": 0.0,
-        "negotiated_value": 0.0
-      },
       {
         "date": "2025-11-10",
         "open": 30.4,
@@ -21595,21 +21595,21 @@
         "value": 69.32,
         "negotiated_volume": 0.0,
         "negotiated_value": 0.0
+      },
+      {
+        "date": "2026-11-09",
+        "open": 16.2,
+        "high": 16.55,
+        "low": 16.05,
+        "close": 16.2,
+        "adjusted_close": 16.2,
+        "volume": 2695000.0,
+        "value": 43.81,
+        "negotiated_volume": 0.0,
+        "negotiated_value": 0.0
       }
     ],
     "TPB": [
-      {
-        "date": "2025-11-07",
-        "open": 16.8,
-        "high": 16.95,
-        "low": 16.35,
-        "close": 16.5,
-        "adjusted_close": 13.85,
-        "volume": 8560700.0,
-        "value": 143.06,
-        "negotiated_volume": 0.0,
-        "negotiated_value": 0.0
-      },
       {
         "date": "2025-11-10",
         "open": 16.5,
@@ -24549,21 +24549,21 @@
         "value": 336.76,
         "negotiated_volume": 0.0,
         "negotiated_value": 0.0
+      },
+      {
+        "date": "2026-11-09",
+        "open": 12.7,
+        "high": 12.8,
+        "low": 12.45,
+        "close": 12.55,
+        "adjusted_close": 12.55,
+        "volume": 8763000.0,
+        "value": 110.3,
+        "negotiated_volume": 949856.0,
+        "negotiated_value": 12.06
       }
     ],
     "TTF": [
-      {
-        "date": "2025-11-07",
-        "open": 2.81,
-        "high": 2.86,
-        "low": 2.8,
-        "close": 2.83,
-        "adjusted_close": 2.83,
-        "volume": 331800.0,
-        "value": 0.94,
-        "negotiated_volume": 0.0,
-        "negotiated_value": 0.0
-      },
       {
         "date": "2025-11-10",
         "open": 2.83,
@@ -27503,21 +27503,21 @@
         "value": 0.3,
         "negotiated_volume": 0.0,
         "negotiated_value": 0.0
+      },
+      {
+        "date": "2026-11-09",
+        "open": 1.01,
+        "high": 1.03,
+        "low": 1.0,
+        "close": 1.0,
+        "adjusted_close": 1.0,
+        "volume": 324300.0,
+        "value": 0.33,
+        "negotiated_volume": 0.0,
+        "negotiated_value": 0.0
       }
     ],
     "FPT": [
-      {
-        "date": "2025-11-07",
-        "open": 99.5,
-        "high": 101.8,
-        "low": 99.5,
-        "close": 101.0,
-        "adjusted_close": 89.64,
-        "volume": 5863600.0,
-        "value": 590.8,
-        "negotiated_volume": 0.0,
-        "negotiated_value": 0.0
-      },
       {
         "date": "2025-11-10",
         "open": 101.2,
@@ -30457,21 +30457,21 @@
         "value": 622.45,
         "negotiated_volume": 170000.0,
         "negotiated_value": 9.18
+      },
+      {
+        "date": "2026-11-09",
+        "open": 51.3,
+        "high": 51.6,
+        "low": 50.6,
+        "close": 51.0,
+        "adjusted_close": 51.0,
+        "volume": 5362500.0,
+        "value": 273.26,
+        "negotiated_volume": 0.0,
+        "negotiated_value": 0.0
       }
     ],
     "HPG": [
-      {
-        "date": "2025-11-07",
-        "open": 26.15,
-        "high": 26.55,
-        "low": 26.0,
-        "close": 26.05,
-        "adjusted_close": 23.26,
-        "volume": 55100200.0,
-        "value": 1444.36,
-        "negotiated_volume": 2118000.0,
-        "negotiated_value": 55.79
-      },
       {
         "date": "2025-11-10",
         "open": 26.2,
@@ -33411,23 +33411,23 @@
         "value": 468.69,
         "negotiated_volume": 470000.0,
         "negotiated_value": 9.69
+      },
+      {
+        "date": "2026-11-09",
+        "open": 21.35,
+        "high": 21.35,
+        "low": 20.75,
+        "close": 20.9,
+        "adjusted_close": 20.9,
+        "volume": 22854600.0,
+        "value": 479.62,
+        "negotiated_volume": 617000.0,
+        "negotiated_value": 12.96
       }
     ]
   },
   "indices": {
     "VNINDEX": [
-      {
-        "date": "2025-11-07",
-        "open": 1636.24,
-        "high": 1638.59,
-        "low": 1595.34,
-        "close": 1599.1,
-        "adjusted_close": 1599.1,
-        "volume": 860731800.0,
-        "value": 23855.18,
-        "negotiated_volume": 28677600.0,
-        "negotiated_value": 852.8
-      },
       {
         "date": "2025-11-10",
         "open": 1598.02,
@@ -36389,8 +36389,20 @@
         "adjusted_close": 1725.36,
         "volume": 862972400.0,
         "value": 15214.75,
-        "negotiated_volume": 200081448.0,
-        "negotiated_value": 3699.13
+        "negotiated_volume": 186550148.0,
+        "negotiated_value": 3404.84
+      },
+      {
+        "date": "2026-11-09",
+        "open": 1728.27,
+        "high": 1728.28,
+        "low": 1701.9,
+        "close": 1714.32,
+        "adjusted_close": 1714.32,
+        "volume": 498014500.0,
+        "value": 10134.65,
+        "negotiated_volume": 171472666.0,
+        "negotiated_value": 3350.29
       }
     ]
   },
