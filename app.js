@@ -193,7 +193,7 @@ function drawProfessionalChart(canvas,all){
  const start=Math.max(0,all.length-count),data=all.slice(start),closes=all.map(x=>+x.close),highs=all.map(x=>+x.high),lows=all.map(x=>+x.low);
  const ma10=chartSMA(closes,10),ma20=chartSMA(closes,20),ma50=chartSMA(closes,50),rsi=chartRSI(closes);
  const bbMid=chartSMA(closes,20),bbUp=closes.map((_,i)=>{if(i<19)return null;const v=closes.slice(i-19,i+1),m=bbMid[i],sd=Math.sqrt(v.reduce((s,x)=>s+(x-m)**2,0)/20);return m+2*sd}),bbLow=closes.map((_,i)=>{if(i<19)return null;const v=closes.slice(i-19,i+1),m=bbMid[i],sd=Math.sqrt(v.reduce((s,x)=>s+(x-m)**2,0)/20);return m-2*sd});
- const ema12=chartEMA(closes,12),ema26=chartEMA(closes,26),macd=closes.map((_,i)=>ema12[i]-ema26[i]),signal=chartEMA(macd,9),hist=macd.map((v,i)=>v-signal[i]);
+ const ema12=chartEMA(closes,12),ema26=chartEMA(closes,26),macd=closes.map((_,i)=>ema12[i]==null||ema26[i]==null?null:ema12[i]-ema26[i]),signal=chartEMA(macd,9),hist=macd.map((v,i)=>v==null||signal[i]==null?null:v-signal[i]);
  const left=49,right=48,top=22,bottom=22,usable=Math.max(220,h-top-bottom),priceH=usable*(panels.length===0?1:panels.length===1?.68:panels.length===2?.56:.48);
  const gap=panels.length?16:0,each=panels.length?(usable-priceH-gap*(panels.length-1))/panels.length:0;
  const plotW=w-left-right,lo=Math.min(...data.map(x=>+x.low),...(opt.bb?bbLow.slice(start).filter(Number.isFinite):[])),hi=Math.max(...data.map(x=>+x.high),...(opt.bb?bbUp.slice(start).filter(Number.isFinite):[])),pad=(hi-lo)*.07||.5,min=lo-pad,max=hi+pad;
