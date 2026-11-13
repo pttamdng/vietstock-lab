@@ -12,7 +12,7 @@ function load(){try{let x=JSON.parse(localStorage.getItem(KEY));return x&&x.stoc
 function rawCandles(sym){return (state.candles[sym]||[]).slice().sort((a,b)=>a.date.localeCompare(b.date))}
 // Normalize historical OHLC to CafeF adjusted-close basis for technical analysis.
 // Keep raw candles separately for live quotes, positions and price alerts.
-function candles(sym){return rawCandles(sym).map(x=>{const close=+x.close,adj=+x.adjusted_close,factor=Number.isFinite(adj)&&adj>0&&Number.isFinite(close)&&close>0?adj/close:1;return {...x,raw_open:+x.open,raw_high:+x.high,raw_low:+x.low,raw_close:close,adjustment_factor:factor,open:+x.open*factor,high:+x.high*factor,low:+x.low*factor,close:Number.isFinite(adj)&&adj>0?adj:close,adjustment_missing:!(Number.isFinite(adj)&&adj>0)}})}function sma(a,n){return a.map((_,i)=>i+1<n?null:a.slice(i-n+1,i+1).reduce((s,v)=>s+v,0)/n)}function rsi(values,n=14){let out=Array(values.length).fill(null);if(values.length<=n)return out;let gain=0,loss=0;for(let i=1;i<=n;i++){let d=values[i]-values[i-1];gain+=Math.max(0,d);loss+=Math.max(0,-d)}let ag=gain/n,al=loss/n;out[n]=al===0?100:100-100/(1+ag/al);for(let i=n+1;i<values.length;i++){let d=values[i]-values[i-1];ag=(ag*(n-1)+Math.max(0,d))/n;al=(al*(n-1)+Math.max(0,-d))/n;out[i]=al===0?100:100-100/(1+ag/al)}return out}
+function candles(sym){return rawCandles(sym).map(x=>{const close=+x.close,adj=+x.adjusted_close,factor=Number.isFinite(adj)&&adj>0&&Number.isFinite(close)&&close>0?adj/close:1;return {...x,raw_open:+x.open,raw_high:+x.high,raw_low:+x.low,raw_close:close,adjustment_factor:factor,open:+x.open*factor,high:+x.high*factor,low:+x.low*factor,close:Number.isFinite(adj)&&adj>0?adj:close,adjustment_missing:!(Number.isFinite(adj)&&adj>0)}})}function sma(a,n){return a.map((_,i)=>i+1<n?null:a.slice(i-n+1,i+1).reduce((s,v)=>s+v,0)/n)}function rsi(values,n=14){let out=Array(values.length).fill(null);if(values.length<=n)return out;let gain=0,loss=0;for(let i=1;i<=n;i++){let d=values[i]-values[i-1];gain+=Math.max(0,d);loss+=Math.max(0,-d)}let ag=gain/n,al=loss/n;out[n]=al===0?(ag===0?50:100):ag===0?0:100-100/(1+ag/al);for(let i=n+1;i<values.length;i++){let d=values[i]-values[i-1];ag=(ag*(n-1)+Math.max(0,d))/n;al=(al*(n-1)+Math.max(0,-d))/n;out[i]=al===0?(ag===0?50:100):ag===0?0:100-100/(1+ag/al)}return out}
 function metrics(sym){
  const raw=rawCandles(sym),a=candles(sym),cl=a.map(x=>+x.close),vol=a.map(x=>+x.volume);
  const ma10=sma(cl,10),ma20=sma(cl,20),ma50=sma(cl,50),ma200=sma(cl,200);
@@ -21,8 +21,8 @@ function metrics(sym){
  const priorVol=vol.slice(Math.max(0,i-20),i),avgVol=priorVol.length?priorVol.reduce((s,x)=>s+x,0)/priorVol.length:null;
  const priorSpread=a.slice(Math.max(0,i-20),i).map(x=>Math.max(0,x.high-x.low));
  const avgSpread=priorSpread.length?priorSpread.reduce((s,x)=>s+x,0)/priorSpread.length:null;
- const tail=cl.slice(-20),mean=tail.length?tail.reduce((s,x)=>s+x,0)/tail.length:null;
- const sd=tail.length?Math.sqrt(tail.reduce((s,x)=>(s+(x-mean)**2),0)/tail.length):null;
+ const tail=cl.slice(-20),mean=tail.length===20?tail.reduce((s,x)=>s+x,0)/20:null;
+ const sd=tail.length===20?Math.sqrt(tail.reduce((s,x)=>(s+(x-mean)**2),0)/20):null;
  return {a,last,rawLast,rawPrev,ma10:ma10[i],ma20:ma20[i],ma50:ma50[i],ma200:ma200[i],vma5:vma5[i],vma10:vma10[i],vma20:vma20[i],rsi:rs[i],bbMid:mean,bbUp:mean==null?null:mean+2*sd,bbLow:mean==null?null:mean-2*sd,prev:a[i-1],avgVol,avgSpread,volumeRatio:avgVol>0&&last?last.volume/avgVol:null};
 }
 function analyze(sym){
