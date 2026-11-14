@@ -14,13 +14,13 @@ function intradayCandle(sym){
  const item=state.intraday?.[sym],snaps=item?.snapshots||[];
  if(!snaps.length)return null;
  const date=item.date||localTradingDate();
- if((state.candles[sym]||[]).some(x=>x.date===date))return null;
+ if(date!==localTradingDate()||(state.candles[sym]||[]).some(x=>x.date===date))return null;
  const first=snaps[0],last=snaps[snaps.length-1];
  const prices=snaps.map(x=>+x.price).filter(Number.isFinite);
  const highs=snaps.map(x=>+x.high).filter(Number.isFinite);
  const lows=snaps.map(x=>+x.low).filter(Number.isFinite);
  if(!prices.length)return null;
- return {date,open:prices[0],high:Math.max(...prices,...highs),low:Math.min(...prices,...lows),close:+last.price,volume:+last.volume||0,source:'Snapshot trong phiên',is_intraday:true,snapshot_count:snaps.length};
+ return {date,open:(snaps.find(x=>Number.isFinite(+x.open)&&+x.open>0)?.open||prices[0]),high:Math.max(...prices,...highs),low:Math.min(...prices,...lows),close:+last.price,volume:+last.volume||0,source:'Snapshot trong phiên',is_intraday:true,snapshot_count:snaps.length};
 }
 function rawCandles(sym){const rows=(state.candles[sym]||[]).slice();const live=intradayCandle(sym);if(live)rows.push(live);return rows.sort((a,b)=>a.date.localeCompare(b.date))}
 // Normalize historical OHLC to CafeF adjusted-close basis for technical analysis.
@@ -328,12 +328,12 @@ $('positionForm').onsubmit=async e=>{e.preventDefault();let sym=$('pSymbol').val
 $('alertForm').onsubmit=e=>{e.preventDefault();let a={id:Date.now(),symbol:$('aSymbol').value,type:$('aType').value,price:+$('aPrice').value,note:$('aNote').value.trim(),active:true};state.alerts.push(a);save();log(`Tạo cảnh báo ${a.symbol} ${a.type} ${a.price}`);renderAlerts();$('aNote').value='';toast('Đã tạo cảnh báo.');};$('connectPrivate').onclick=connectPrivatePortfolio;$('syncPrivateNow').onclick=async()=>{const ok=await syncPrivatePortfolio();toast(ok?'Đã đồng bộ danh mục lên GitHub.':'Chưa đồng bộ được. Xem thông báo trong Cài đặt.');};$('disconnectPrivate').onclick=disconnectPrivatePortfolio;privateStatus('Danh mục riêng tư được kết nối qua Cloudflare Worker. Không cần nhập token trên điện thoại.',true);renderSyncHistory();$('saveSettings').onclick=()=>{state.settings={...state.settings,riskPct:+$('riskPct').value||2,sensitivity:$('vsaSensitivity').value,investorName:$('investorName').value.trim(),budget:+$('budget').value||0,apiEndpoint:$('apiEndpoint').value.trim()};save();log('Lưu cài đặt ứng dụng');toast('Đã lưu cài đặt.')};$('installBtn').onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null}else toast('Để cài PWA, cần triển khai app qua HTTPS rồi mở bằng Chrome Android.');};window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e});$('providerInfo').onclick=()=>window.open('https://www.vnstocks.com/docs/vnstock/thi-truong-market','_blank','noopener');$('fetchMarketBtn').onclick=()=>syncMarketData(true);$('runWorkflowInfo').onclick=()=>window.open('https://github.com/pttamdng/vietstock-lab/actions/workflows/refresh-market-data.yml','_blank','noopener');
 $('downloadTemplate').onclick=()=>{let csv='symbol,date,open,high,low,close,volume\nDHC,2026-10-09,39.20,39.20,36.50,36.50,1611500\nDHC,2026-10-12,36.20,37.25,35.05,36.55,665800\nDHC,2026-10-13,36.95,37.40,35.90,36.80,957600\n';download('DHC-confirmed-sessions.csv',csv,'text/csv;charset=utf-8')};function download(name,data,type){let blob=new Blob([data],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}$('saveIntraday').onclick=()=>{
  const sym=($('intradaySymbol').value||'').trim().toUpperCase();
- const price=Number($('intradayPrice').value),high=Number($('intradayHigh').value),low=Number($('intradayLow').value),volume=Number($('intradayVolume').value);
- if(!sym||![price,high,low,volume].every(Number.isFinite)||price<=0||high<price||low>price||low<=0||volume<0){$('intradayStatus').textContent='Kiểm tra mã, giá hiện tại, cao/thấp và khối lượng tích lũy.';return}
- if(!state.stocks.some(x=>x.symbol===sym)){state.stocks.push({symbol:sym,name:sym,exchange:'UPCOM'});if(!state.candles[sym])state.candles[sym]=[]}
+ const price=Number($('intradayPrice').value),high=Number($('intradayHigh').value),low=Number($('intradayLow').value),volume=Number($('intradayVolume').value),open=Number($('intradayOpen').value);
+ if(!sym||![price,high,low,volume].every(Number.isFinite)||($('intradayOpen').value!==''&&(!Number.isFinite(open)||open<=0))||price<=0||high<price||low>price||low<=0||volume<0){$('intradayStatus').textContent='Kiểm tra mã, giá hiện tại, cao/thấp và khối lượng tích lũy.';return}
+ if(!state.stocks.some(x=>x.symbol===sym)){state.stocks.push({symbol:sym,name:sym,exchange:$('intradayExchange').value||'HOSE'});if(!state.candles[sym])state.candles[sym]=[]}
  if(!state.intraday)state.intraday={};
  const date=localTradingDate(),entry=state.intraday[sym]&&state.intraday[sym].date===date?state.intraday[sym]:{date,snapshots:[]};
- entry.snapshots.push({time:new Date().toISOString(),price,high,low,volume});
+ entry.snapshots.push({time:new Date().toISOString(),price,high,low,volume,open:Number.isFinite(open)&&open>0?open:null});
  entry.snapshots=entry.snapshots.slice(-100);
  state.intraday[sym]=entry;save();log('Snapshot trong phiên '+sym+' lúc '+new Date().toLocaleTimeString('vi-VN')+'; giá '+price+', KL tích lũy '+volume+'.');
  if($('analysisSymbol')){const option=[...$('analysisSymbol').options].find(x=>x.value===sym);if(option)$('analysisSymbol').value=sym;state.selectedSymbol=sym}
