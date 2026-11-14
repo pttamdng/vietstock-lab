@@ -132,7 +132,7 @@ table{font-size:12px}th,td{padding:10px 8px}th{background:var(--surface);positio
 <section id="data" class="page"><div class="grid">
 <div class="card span12"><h2>Snapshot dữ liệu trong phiên</h2><p class="muted tiny">Nhập giá hiện tại và khối lượng khớp lũy kế tại thời điểm ghi nhận. Mỗi lần lưu tạo một Snapshot; biểu đồ dùng nến tạm, không ghi đè dữ liệu cuối ngày.</p>
 <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
-<div class="field"><label>Mã cổ phiếu</label><input id="intradaySymbol" type="text" maxlength="12" placeholder="Ví dụ: DHC"></div>
+<div class="field"><label>Mã cổ phiếu</label><input id="intradaySymbol" type="text" maxlength="12" placeholder="Ví dụ: DHC"></div><div class="field"><label>Sàn (nếu thêm mã mới)</label><select id="intradayExchange"><option value="HOSE">HOSE</option><option value="HNX">HNX</option><option value="UPCOM">UPCoM</option></select></div><div class="field"><label>Giá mở cửa (không bắt buộc)</label><input id="intradayOpen" type="number" step="any" inputmode="decimal" placeholder="Nếu bỏ trống, lấy giá Snapshot đầu tiên"></div>
 <div class="field"><label>Giá hiện tại (nghìn đồng)</label><input id="intradayPrice" type="number" step="any" inputmode="decimal" placeholder="36.80"></div>
 <div class="field"><label>Giá cao nhất phiên</label><input id="intradayHigh" type="number" step="any" inputmode="decimal" placeholder="37.40"></div>
 <div class="field"><label>Giá thấp nhất phiên</label><input id="intradayLow" type="number" step="any" inputmode="decimal" placeholder="35.90"></div>
