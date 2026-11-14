@@ -2,7 +2,7 @@
 
 ## Chức năng
 - GitHub Actions gọi trực tiếp endpoint lịch sử giao dịch JSON của CafeF, không phụ thuộc Excel/Power Query trên máy người dùng.
-- Mỗi lần cập nhật lấy khoảng 730 ngày (2 năm) gần nhất và tự động phân trang cho từng mã trong `data/symbols.json`.
+- Mỗi lần cập nhật lấy khoảng từ 01/01/2024 đến ngày cập nhật mới nhất và tự động phân trang cho từng mã trong `data/symbols.json`.
 - Lưu snapshot vào `data/market.json`; GitHub Pages đọc snapshot này để tính MA10/MA50, RSI(14), Bollinger và tỷ lệ khối lượng.
 - Giao diện responsive, watchlist, danh mục, nhập OHLCV thủ công, import CSV, export/backup JSON, cảnh báo và bộ quy tắc Wyckoff/VSA sơ bộ.
 - Lịch tự động chạy ngày thứ Hai–thứ Sáu khoảng 17:15 giờ Việt Nam; cũng có thể chạy thủ công trong tab Actions.
