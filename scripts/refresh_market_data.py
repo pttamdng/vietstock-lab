@@ -170,7 +170,7 @@ def fetch_history(symbol, exchange, start_date, end_date):
 def main():
     config = load_config()
     end_date = date.today()
-    start_date = end_date - timedelta(days=730)
+    start_date = date(2024, 1, 1)
     stocks = {}
     indices = {}
     errors = []
@@ -194,9 +194,21 @@ def main():
             continue
         try:
             print(f"Fetching {symbol} from CafeF ({exchange}), {start_date} to {end_date}")
-            rows = fetch_history(symbol, exchange, start_date, end_date)
+            # CafeF may cap wide date queries to roughly one year.
+            # Split into <=365-day windows and merge by actual trading date.
+            rows_by_date = {}
+            window_start = start_date
+            while window_start <= end_date:
+                window_end = min(window_start + timedelta(days=364), end_date)
+                print(f"{symbol}: requesting window {window_start} to {window_end}")
+                window_rows = fetch_history(symbol, exchange, window_start, window_end)
+                for row in window_rows:
+                    rows_by_date[row["date"]] = row
+                window_start = window_end + timedelta(days=1)
+                time.sleep(0.25)
+            rows = [rows_by_date[key] for key in sorted(rows_by_date)]
             stocks[symbol] = rows
-            print(f"SUCCESS {symbol}: {len(rows)} sessions")
+            print(f"SUCCESS {symbol}: {len(rows)} sessions, first={rows[0]['date']}, last={rows[-1]['date']}")
         except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as error:
             message = f"{symbol}: {type(error).__name__}: {error}"
             errors.append(message)
@@ -211,9 +223,18 @@ def main():
             continue
         try:
             print(f"Fetching index {symbol} from CafeF")
-            rows = fetch_history(symbol, "HOSE", start_date, end_date)
+            rows_by_date = {}
+            window_start = start_date
+            while window_start <= end_date:
+                window_end = min(window_start + timedelta(days=364), end_date)
+                print(f"{symbol}: requesting window {window_start} to {window_end}")
+                for row in fetch_history(symbol, "HOSE", window_start, window_end):
+                    rows_by_date[row["date"]] = row
+                window_start = window_end + timedelta(days=1)
+                time.sleep(0.25)
+            rows = [rows_by_date[key] for key in sorted(rows_by_date)]
             indices[symbol] = rows
-            print(f"SUCCESS index {symbol}: {len(rows)} sessions")
+            print(f"SUCCESS index {symbol}: {len(rows)} sessions, first={rows[0]['date']}, last={rows[-1]['date']}")
         except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as error:
             message = f"Index {symbol}: {type(error).__name__}: {error}"
             errors.append(message)
@@ -231,7 +252,8 @@ def main():
         "updated_at": datetime.now(TIMEZONE).isoformat(),
         "source": "CafeF PriceHistory API",
         "timezone": "Asia/Ho_Chi_Minh",
-        "lookback_days": 730,
+        "lookback_days": (end_date - start_date).days,
+        "lookback_mode": "2024-calendar-start",
         "lookback_start": start_date.isoformat(),
         "lookback_end": end_date.isoformat(),
         "stocks": stocks,
