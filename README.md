@@ -2,7 +2,7 @@
 
 ## Chức năng
 - GitHub Actions gọi trực tiếp endpoint lịch sử giao dịch JSON của CafeF, không phụ thuộc Excel/Power Query trên máy người dùng.
-- Mỗi lần cập nhật lấy khoảng 365 ngày gần nhất và tự động phân trang cho từng mã trong `data/symbols.json`.
+- Mỗi lần cập nhật lấy khoảng 730 ngày (2 năm) gần nhất và tự động phân trang cho từng mã trong `data/symbols.json`.
 - Lưu snapshot vào `data/market.json`; GitHub Pages đọc snapshot này để tính MA10/MA50, RSI(14), Bollinger và tỷ lệ khối lượng.
 - Giao diện responsive, watchlist, danh mục, nhập OHLCV thủ công, import CSV, export/backup JSON, cảnh báo và bộ quy tắc Wyckoff/VSA sơ bộ.
 - Lịch tự động chạy ngày thứ Hai–thứ Sáu khoảng 17:15 giờ Việt Nam; cũng có thể chạy thủ công trong tab Actions.
@@ -13,7 +13,7 @@
 3. Script commit snapshot mới vào `data/market.json`.
 4. Ứng dụng GitHub Pages tải snapshot từ repository; trình duyệt không gọi trực tiếp CafeF.
 
-Cách này tránh phụ thuộc file Power Query trên máy cá nhân và tránh giới hạn CORS của trình duyệt. Đây là cập nhật theo snapshot cuối ngày, không phải dữ liệu realtime.
+Cách này tránh phụ thuộc file Power Query trên máy cá nhân và tránh giới hạn CORS của trình duyệt. Đây là cập nhật theo snapshot cuối ngày, không phải dữ liệu realtime. Ứng dụng hỗ trợ nhập Snapshot trong phiên thủ công; Snapshot tạo nến tạm cho ngày hiện tại, không thay thế nến cuối ngày.
 
 ## Cấu hình
 - Danh sách mã: `data/symbols.json`.
@@ -49,6 +49,13 @@ Giá OHLC được giữ theo đơn vị hiển thị của CafeF (thường là
 - Nếu mọi mã lỗi, dữ liệu cũ không bị ghi đè.
 - App lưu danh mục/vị thế người dùng trong localStorage của trình duyệt; dữ liệu này không được gửi lên GitHub.
 - Wyckoff/VSA hiện là quy tắc sàng lọc sơ bộ, không phải khuyến nghị mua bán tự động. Không kết nối đặt lệnh.
+
+## Dữ liệu trong phiên và UPCoM giao dịch thưa
+- Snapshot lưu riêng trong `state.intraday` của localStorage; mỗi lần nhập giữ thời điểm, giá, cao/thấp và khối lượng khớp lũy kế.
+- Nến tạm chỉ được ghép vào biểu đồ trong ngày hiện tại nếu chưa có nến OHLCV cuối ngày cho cùng ngày. Sang ngày mới, Snapshot cũ không còn được dùng làm nến hiện hành.
+- Khi CafeF đồng bộ, dữ liệu ngày được ghép theo ngày; các dòng có nguồn `CSV`, `Manual` hoặc `Người dùng cung cấp` được ưu tiên giữ nguyên. Dữ liệu CafeF cập nhật các ngày còn lại.
+- Không tạo nến giả cho ngày không giao dịch. Ứng dụng ước tính khoảng cách trung vị giữa các phiên; mã có khoảng cách lớn hơn 3 ngày được đánh dấu giao dịch thưa. MA/VSA tính theo phiên thực tế, không theo ngày lịch.
+- Dữ liệu Snapshot là giá/khối lượng tích lũy do người dùng nhập, không phải dữ liệu khớp lệnh realtime. Nến tạm có thể thay đổi; tín hiệu Wyckoff/VSA trong phiên chỉ là ứng viên.
 
 ## CSV format
 `symbol,date,open,high,low,close,volume`
