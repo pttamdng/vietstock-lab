@@ -21,7 +21,7 @@
     "HNXINDEX",
     "UPCOMINDEX"
   ],
-  "lookback": "1Y",
+  "lookback": "2Y",
   "exchanges": {
     "DHC": "HOSE",
     "PC1": "HOSE",
