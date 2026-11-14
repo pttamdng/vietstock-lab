@@ -14,7 +14,7 @@ OUTPUT_PATH = ROOT / "data" / "market.json"
 TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
 BASE_URL = "https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx"
 PAGE_SIZE = 30
-MAX_PAGES = 30
+MAX_PAGES = 60
 
 # Fallback only. Preferred exchange mapping lives in data/symbols.json
 # so newly added watchlist symbols retain the exchange selected in the app.
@@ -170,7 +170,7 @@ def fetch_history(symbol, exchange, start_date, end_date):
 def main():
     config = load_config()
     end_date = date.today()
-    start_date = end_date - timedelta(days=365)
+    start_date = end_date - timedelta(days=730)
     stocks = {}
     indices = {}
     errors = []
@@ -231,6 +231,7 @@ def main():
         "updated_at": datetime.now(TIMEZONE).isoformat(),
         "source": "CafeF PriceHistory API",
         "timezone": "Asia/Ho_Chi_Minh",
+        "lookback_days": 730,
         "lookback_start": start_date.isoformat(),
         "lookback_end": end_date.isoformat(),
         "stocks": stocks,
