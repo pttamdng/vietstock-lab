@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Fetch one year of OHLCV directly from CafeF
+      - name: Fetch two years of OHLCV directly from CafeF
         run: python scripts/refresh_market_data.py
 
       - name: Commit updated market snapshot
