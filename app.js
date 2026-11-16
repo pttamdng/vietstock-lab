@@ -220,6 +220,27 @@ function chartRSI(values,period=14){return rsi(values,period)}
 function chartEMA(values,period){const k=2/(period+1),out=Array(values.length).fill(null);let seed=[],prev=null;for(let i=0;i<values.length;i++){const v=values[i];if(v==null||!Number.isFinite(v)){continue}if(prev==null){seed.push(v);if(seed.length===period){prev=seed.reduce((s,x)=>s+x,0)/period;out[i]=prev}}else{prev=v*k+prev*(1-k);out[i]=prev}}return out}
 function chartOptions(){try{return JSON.parse(localStorage.getItem('vsl_chart_options')||'{}')}catch(e){return {}}}
 function wyckoffMarker(z,prior){if(!z||!prior||prior.length<20)return null;const ph=Math.max(...prior.map(q=>+q.high)),pl=Math.min(...prior.map(q=>+q.low)),avgVol=prior.reduce((s,q)=>s+(+q.volume||0),0)/prior.length,avgSpread=prior.reduce((s,q)=>s+Math.max(0,+q.high- +q.low),0)/prior.length,spread=Math.max(0,+z.high- +z.low),pos=spread?(+z.close- +z.low)/spread:.5,vr=avgVol?(+z.volume||0)/avgVol:0,wide=avgSpread>0&&spread>=avgSpread*1.2,highVol=vr>=1.25;if(+z.low<pl&&+z.close>pl&&pos>.55)return {code:'SP',name:'Spring',tone:'good',color:'#16a879',detail:'Xuyên hỗ trợ rồi đóng cửa trở lại phía trên'};if(+z.high>ph&&+z.close<ph&&pos<.6)return {code:'UT',name:'Upthrust',tone:'bad',color:'#dc5365',detail:'Vượt kháng cự nhưng đóng cửa trở lại bên dưới'};if(+z.close>+z.open&&pos>=.75&&wide&&highVol&&+z.close>ph)return {code:'SOS',name:'SOS',tone:'good',color:'#16a879',detail:'Nến tăng rộng, đóng gần cao nhất, volume cao và vượt đỉnh'};if(+z.close<+z.open&&pos<=.25&&wide&&highVol&&+z.close<pl)return {code:'SOW',name:'SOW',tone:'bad',color:'#dc5365',detail:'Nến giảm rộng, đóng gần thấp nhất, volume cao và thủng đáy'};return null}
+function chartDefaultCount(length){const base=chartInterval==='M'?(chartRange==='1M'?1:chartRange==='3M'?3:chartRange==='6M'?6:chartRange==='1Y'?12:length):(chartRange==='1M'?22:chartRange==='3M'?66:chartRange==='6M'?132:chartRange==='1Y'?252:length);return Math.max(chartInterval==='M'?1:10,Math.min(length,base||length))}
+function chartSeries(source){
+ const all=Array.isArray(source)?source:[];
+ if(chartInterval==='D')return all;
+ if(chartInterval==='M'){
+  const groups=new Map();
+  all.forEach(z=>{const key=String(z.date||'').slice(0,7);if(!key)return;let g=groups.get(key);if(!g)groups.set(key,g={date:key+'-01',open:+z.open,high:+z.high,low:+z.low,close:+z.close,volume:+z.volume||0});else{g.high=Math.max(g.high,+z.high);g.low=Math.min(g.low,+z.low);g.close=+z.close;g.volume+=+z.volume||0}});
+  return [...groups.values()];
+ }
+ const snaps=state.intraday?.[activeSymbol()]?.snapshots||[],bucketMs=chartInterval==='15m'?15*60000:60*60000;
+ if(!snaps.length)return [];
+ const groups=new Map();let prevCum=0;
+ snaps.forEach(s=>{const t=new Date(s.time);if(!Number.isFinite(t.getTime()))return;const key=Math.floor(t.getTime()/bucketMs)*bucketMs,price=+s.price;if(!Number.isFinite(price)||price<=0)return;const cum=Math.max(0,+s.volume||0),delta=Math.max(0,cum-prevCum);prevCum=cum;let g=groups.get(key);if(!g)groups.set(key,g={date:new Date(key).toISOString(),open:price,high:price,low:price,close:price,volume:delta,is_intraday:true});else{g.high=Math.max(g.high,price);g.low=Math.min(g.low,price);g.close=price;g.volume+=delta}});
+ return [...groups.values()].sort((x,y)=>x.date.localeCompare(y.date));
+}
+function chartDateLabel(value){
+ const s=String(value||'');
+ if(chartInterval==='15m'||chartInterval==='1h'){const d=new Date(s);if(Number.isFinite(d.getTime()))return d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});return s.slice(11,16)}
+ if(chartInterval==='M')return s.slice(5,7)+'/'+s.slice(0,4);
+ return s.length>=10?s.slice(8,10)+'/'+s.slice(5,7):s;
+}
 function drawProfessionalChart(canvas,all){
  all=chartSeries(all);
  if(!canvas)return;
