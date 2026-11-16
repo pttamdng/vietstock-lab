@@ -228,24 +228,29 @@ function chartDefaultCount(length){
  const minimum=chartInterval==='M'?1:(chartInterval==='W'?2:10);
  return Math.max(minimum,Math.min(length,base||length));
 }
+function chartParseDate(value){
+ const s=String(value??'').trim();
+ let m=s.match(/^(\\d{4})[-/.](\\d{1,2})[-/.](\\d{1,2})/);
+ if(m)return new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));
+ m=s.match(/^(\\d{1,2})[/.](\\d{1,2})[/.](\\d{4})/);
+ if(m)return new Date(Date.UTC(+m[3],+m[2]-1,+m[1]));
+ const d=new Date(s);
+ return Number.isFinite(d.getTime())?new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())):null;
+}
 function chartSeries(source){
  const all=Array.isArray(source)?source:[];
  if(chartInterval==='D')return all;
+ const dated=all.map(z=>({z,d:chartParseDate(z.date)})).filter(x=>x.d&&Number.isFinite(+x.z.close)&&Number.isFinite(+x.z.open)&&Number.isFinite(+x.z.high)&&Number.isFinite(+x.z.low)).sort((x,y)=>x.d-y.d);
  const groups=new Map();
- all.forEach(z=>{
-  const raw=String(z.date||'').slice(0,10);
-  if(raw.length<10)return;
-  const d=new Date(raw+'T00:00:00Z');
-  if(!Number.isFinite(d.getTime()))return;
+ dated.forEach(({z,d})=>{
   let key;
   if(chartInterval==='W'){
-   const day=(d.getUTCDay()+6)%7;
-   d.setUTCDate(d.getUTCDate()-day);
-   key=d.toISOString().slice(0,10);
-  }else key=raw.slice(0,7)+'-01';
+   const monday=new Date(d);monday.setUTCDate(monday.getUTCDate()-((monday.getUTCDay()+6)%7));
+   key=monday.toISOString().slice(0,10);
+  }else key=d.toISOString().slice(0,7)+'-01';
   let g=groups.get(key);
-  if(!g)groups.set(key,g={date:key,open:+z.open,high:+z.high,low:+z.low,close:+z.close,volume:+z.volume||0});
-  else{g.high=Math.max(g.high,+z.high);g.low=Math.min(g.low,+z.low);g.close=+z.close;g.volume+=+z.volume||0}
+  if(!g)groups.set(key,g={date:key,open:+z.open,high:+z.high,low:+z.low,close:+z.close,volume:Number(z.volume)||0});
+  else{g.high=Math.max(g.high,+z.high);g.low=Math.min(g.low,+z.low);g.close=+z.close;g.volume+=Number(z.volume)||0}
  });
  return [...groups.values()].sort((x,y)=>x.date.localeCompare(y.date));
 }
