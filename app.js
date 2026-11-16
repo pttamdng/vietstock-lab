@@ -220,26 +220,40 @@ function chartRSI(values,period=14){return rsi(values,period)}
 function chartEMA(values,period){const k=2/(period+1),out=Array(values.length).fill(null);let seed=[],prev=null;for(let i=0;i<values.length;i++){const v=values[i];if(v==null||!Number.isFinite(v)){continue}if(prev==null){seed.push(v);if(seed.length===period){prev=seed.reduce((s,x)=>s+x,0)/period;out[i]=prev}}else{prev=v*k+prev*(1-k);out[i]=prev}}return out}
 function chartOptions(){try{return JSON.parse(localStorage.getItem('vsl_chart_options')||'{}')}catch(e){return {}}}
 function wyckoffMarker(z,prior){if(!z||!prior||prior.length<20)return null;const ph=Math.max(...prior.map(q=>+q.high)),pl=Math.min(...prior.map(q=>+q.low)),avgVol=prior.reduce((s,q)=>s+(+q.volume||0),0)/prior.length,avgSpread=prior.reduce((s,q)=>s+Math.max(0,+q.high- +q.low),0)/prior.length,spread=Math.max(0,+z.high- +z.low),pos=spread?(+z.close- +z.low)/spread:.5,vr=avgVol?(+z.volume||0)/avgVol:0,wide=avgSpread>0&&spread>=avgSpread*1.2,highVol=vr>=1.25;if(+z.low<pl&&+z.close>pl&&pos>.55)return {code:'SP',name:'Spring',tone:'good',color:'#16a879',detail:'Xuyên hỗ trợ rồi đóng cửa trở lại phía trên'};if(+z.high>ph&&+z.close<ph&&pos<.6)return {code:'UT',name:'Upthrust',tone:'bad',color:'#dc5365',detail:'Vượt kháng cự nhưng đóng cửa trở lại bên dưới'};if(+z.close>+z.open&&pos>=.75&&wide&&highVol&&+z.close>ph)return {code:'SOS',name:'SOS',tone:'good',color:'#16a879',detail:'Nến tăng rộng, đóng gần cao nhất, volume cao và vượt đỉnh'};if(+z.close<+z.open&&pos<=.25&&wide&&highVol&&+z.close<pl)return {code:'SOW',name:'SOW',tone:'bad',color:'#dc5365',detail:'Nến giảm rộng, đóng gần thấp nhất, volume cao và thủng đáy'};return null}
-function chartDefaultCount(length){const base=chartInterval==='M'?(chartRange==='1M'?1:chartRange==='3M'?3:chartRange==='6M'?6:chartRange==='1Y'?12:length):(chartRange==='1M'?22:chartRange==='3M'?66:chartRange==='6M'?132:chartRange==='1Y'?252:length);return Math.max(chartInterval==='M'?1:10,Math.min(length,base||length))}
+function chartDefaultCount(length){
+ let base=length;
+ if(chartInterval==='M')base=chartRange==='1M'?1:chartRange==='3M'?3:chartRange==='6M'?6:chartRange==='1Y'?12:length;
+ else if(chartInterval==='W')base=chartRange==='1M'?5:chartRange==='3M'?13:chartRange==='6M'?26:chartRange==='1Y'?52:length;
+ else base=chartRange==='1M'?22:chartRange==='3M'?66:chartRange==='6M'?132:chartRange==='1Y'?252:length;
+ const minimum=chartInterval==='M'?1:(chartInterval==='W'?2:10);
+ return Math.max(minimum,Math.min(length,base||length));
+}
 function chartSeries(source){
  const all=Array.isArray(source)?source:[];
  if(chartInterval==='D')return all;
- if(chartInterval==='M'){
-  const groups=new Map();
-  all.forEach(z=>{const key=String(z.date||'').slice(0,7);if(!key)return;let g=groups.get(key);if(!g)groups.set(key,g={date:key+'-01',open:+z.open,high:+z.high,low:+z.low,close:+z.close,volume:+z.volume||0});else{g.high=Math.max(g.high,+z.high);g.low=Math.min(g.low,+z.low);g.close=+z.close;g.volume+=+z.volume||0}});
-  return [...groups.values()];
- }
- const snaps=state.intraday?.[activeSymbol()]?.snapshots||[],bucketMs=chartInterval==='15m'?15*60000:60*60000;
- if(!snaps.length)return [];
- const groups=new Map();let prevCum=0;
- snaps.forEach(s=>{const t=new Date(s.time);if(!Number.isFinite(t.getTime()))return;const key=Math.floor(t.getTime()/bucketMs)*bucketMs,price=+s.price;if(!Number.isFinite(price)||price<=0)return;const cum=Math.max(0,+s.volume||0),delta=Math.max(0,cum-prevCum);prevCum=cum;let g=groups.get(key);if(!g)groups.set(key,g={date:new Date(key).toISOString(),open:price,high:price,low:price,close:price,volume:delta,is_intraday:true});else{g.high=Math.max(g.high,price);g.low=Math.min(g.low,price);g.close=price;g.volume+=delta}});
+ const groups=new Map();
+ all.forEach(z=>{
+  const raw=String(z.date||'').slice(0,10);
+  if(raw.length<10)return;
+  const d=new Date(raw+'T00:00:00Z');
+  if(!Number.isFinite(d.getTime()))return;
+  let key;
+  if(chartInterval==='W'){
+   const day=(d.getUTCDay()+6)%7;
+   d.setUTCDate(d.getUTCDate()-day);
+   key=d.toISOString().slice(0,10);
+  }else key=raw.slice(0,7)+'-01';
+  let g=groups.get(key);
+  if(!g)groups.set(key,g={date:key,open:+z.open,high:+z.high,low:+z.low,close:+z.close,volume:+z.volume||0});
+  else{g.high=Math.max(g.high,+z.high);g.low=Math.min(g.low,+z.low);g.close=+z.close;g.volume+=+z.volume||0}
+ });
  return [...groups.values()].sort((x,y)=>x.date.localeCompare(y.date));
 }
 function chartDateLabel(value){
  const s=String(value||'');
- if(chartInterval==='15m'||chartInterval==='1h'){const d=new Date(s);if(Number.isFinite(d.getTime()))return d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});return s.slice(11,16)}
  if(chartInterval==='M')return s.slice(5,7)+'/'+s.slice(0,4);
- return s.length>=10?s.slice(8,10)+'/'+s.slice(5,7):s;
+ if(s.length>=10)return s.slice(8,10)+'/'+s.slice(5,7);
+ return s;
 }
 function drawProfessionalChart(canvas,all){
  all=chartSeries(all);
@@ -251,7 +265,7 @@ function drawProfessionalChart(canvas,all){
  const c=canvas.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);
  const css=getComputedStyle(document.documentElement),cv=k=>css.getPropertyValue(k).trim();const C={grid:cv('--line')||'#263951',muted:cv('--muted')||'#95a6bd',up:cv('--green')||'#20bd8b',down:cv('--red')||'#f06478',ma10:'#d69e22',ma20:'#3987d7',ma50:'#9a76cf',bb:cv('--muted')||'#8b9bad',rsi:'#b17bd4',macd:'#279b7c'};
  if(!all.length){c.fillStyle=C.muted;c.font='13px system-ui';c.fillText('Chưa có dữ liệu OHLCV',14,h/2);return}
- const count=Math.max(chartInterval==='M'?1:10,Math.min(all.length,chartView.count||chartDefaultCount(all.length))),end=Math.max(count,all.length-(chartView.endOffset||0)),start=Math.max(0,end-count),data=all.slice(start,end),closes=all.map(x=>+x.close),highs=all.map(x=>+x.high),lows=all.map(x=>+x.low);
+ const count=Math.max(chartInterval==='M'?1:chartInterval==='W'?2:10,Math.min(all.length,chartView.count||chartDefaultCount(all.length))),end=Math.max(count,all.length-(chartView.endOffset||0)),start=Math.max(0,end-count),data=all.slice(start,end),closes=all.map(x=>+x.close),highs=all.map(x=>+x.high),lows=all.map(x=>+x.low);
  const ma10=chartSMA(closes,10),ma20=chartSMA(closes,20),ma50=chartSMA(closes,50),ma200=chartSMA(closes,200),rsi=chartRSI(closes);
  const bbMid=chartSMA(closes,20),bbUp=closes.map((_,i)=>{if(i<19)return null;const v=closes.slice(i-19,i+1),m=bbMid[i],sd=Math.sqrt(v.reduce((s,x)=>s+(x-m)**2,0)/20);return m+2*sd}),bbLow=closes.map((_,i)=>{if(i<19)return null;const v=closes.slice(i-19,i+1),m=bbMid[i],sd=Math.sqrt(v.reduce((s,x)=>s+(x-m)**2,0)/20);return m-2*sd});
  const ema12=chartEMA(closes,12),ema26=chartEMA(closes,26),macd=closes.map((_,i)=>ema12[i]==null||ema26[i]==null?null:ema12[i]-ema26[i]),signal=chartEMA(macd,9),hist=macd.map((v,i)=>v==null||signal[i]==null?null:v-signal[i]);
@@ -283,7 +297,7 @@ function drawProfessionalChart(canvas,all){
 function inspectChartCandle(canvas,all,event){
  all=chartSeries(all);
  const panel=$('chartCandleInfo');if(!panel||!canvas||!all.length)return;
- const count=Math.max(chartInterval==='M'?1:10,Math.min(all.length,chartView.count||chartDefaultCount(all.length))),end=Math.max(count,all.length-(chartView.endOffset||0)),start=Math.max(0,end-count),data=all.slice(start,end),rect=canvas.getBoundingClientRect();
+ const count=Math.max(chartInterval==='M'?1:chartInterval==='W'?2:10,Math.min(all.length,chartView.count||chartDefaultCount(all.length))),end=Math.max(count,all.length-(chartView.endOffset||0)),start=Math.max(0,end-count),data=all.slice(start,end),rect=canvas.getBoundingClientRect();
  const px=(event.clientX-rect.left)*(canvas.clientWidth/rect.width),left=49,right=48,plotW=canvas.clientWidth-left-right;
  const index=Math.max(0,Math.min(data.length-1,Math.floor((px-left)/plotW*data.length)));
  const z=data[index],globalIndex=start+index,closes=all.map(x=>+x.close);
@@ -324,9 +338,17 @@ const chartCanvas=$('priceChart');if(chartCanvas){
  chartCanvas.addEventListener('pointerup',end);chartCanvas.addEventListener('pointercancel',end);
  chartCanvas.addEventListener('wheel',e=>{e.preventDefault();const all=chartSeries(metrics(activeSymbol())?.a||[]),base=chartView.count||chartDefaultCount(all.length);chartView.count=Math.max(10,Math.min(all.length,Math.round(base*(e.deltaY>0?1.15:.87))));drawProfessionalChart(chartCanvas,all);},{passive:false});
 }
-$('chartZoomIn')?.addEventListener('click',()=>{const all=chartSeries(metrics(activeSymbol())?.a||[]);chartView.count=Math.max(chartInterval==='M'?1:10,Math.round((chartView.count||all.length*.25)*.75));drawProfessionalChart($('priceChart'),all)});
+$('chartZoomIn')?.addEventListener('click',()=>{const all=chartSeries(metrics(activeSymbol())?.a||[]);chartView.count=Math.max(chartInterval==='M'?1:chartInterval==='W'?2:10,Math.round((chartView.count||all.length*.25)*.75));drawProfessionalChart($('priceChart'),all)});
 $('chartZoomOut')?.addEventListener('click',()=>{const all=chartSeries(metrics(activeSymbol())?.a||[]);chartView.count=Math.min(all.length,Math.round((chartView.count||all.length*.25)*1.35));drawProfessionalChart($('priceChart'),all)});
-$('chartInterval')?.addEventListener('change',e=>{chartInterval=e.target.value;chartView={count:null,endOffset:0};const rows=chartSeries(metrics(activeSymbol())?.a||[]);drawProfessionalChart($('priceChart'),metrics(activeSymbol())?.a||[]);if(chartInterval==='15m'||chartInterval==='1h')$('chartCandleInfo').innerHTML=rows.length?'<span class="muted tiny">Nến intraday tổng hợp từ Snapshot đã lưu; dữ liệu lịch sử 15 phút/1 giờ chỉ có khi có Snapshot tương ứng.</span>':'<span class="muted tiny">Chưa có Snapshot trong phiên. Hãy lưu nhiều Snapshot tại mục Dữ liệu; App không tự nội suy nến intraday từ dữ liệu ngày.</span>'});document.querySelectorAll('[data-chart-range]').forEach(b=>b.addEventListener('click',()=>{chartRange=b.dataset.chartRange;chartView={count:null,endOffset:0};document.querySelectorAll('[data-chart-range]').forEach(x=>x.classList.toggle('active',x===b));const m=metrics(activeSymbol());drawProfessionalChart($('priceChart'),m?.a||[])}));document.querySelectorAll('[data-chart-toggle]').forEach(el=>{const opts={ma10:true,ma20:true,ma50:true,bb:false,volume:true,rsi:true,macd:false,wyckoff:true,levels:false,...chartOptions()};el.checked=!!opts[el.dataset.chartToggle];el.addEventListener('change',()=>{opts[el.dataset.chartToggle]=el.checked;localStorage.setItem('vsl_chart_options',JSON.stringify(opts));const canvas=$('priceChart');canvas.style.height=(560+(['volume','rsi','macd'].filter(k=>opts[k]).length-2)*65)+'px';drawProfessionalChart(canvas,metrics(activeSymbol())?.a||[])})});document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.page)));$('refreshBtn').onclick=async()=>{await syncMarketData(true);render();toast('Đã kiểm tra dữ liệu tự động và tính lại chỉ báo.')};$('analysisSymbol').onchange=()=>{state.selectedSymbol=$('analysisSymbol').value;save();renderAnalysis();renderDashboard()};async function openWatchlistRequest(action,sym,exchange='HOSE'){
+$('chartInterval')?.addEventListener('change',e=>{
+ chartInterval=e.target.value;chartView={count:null,endOffset:0};
+ drawProfessionalChart($('priceChart'),metrics(activeSymbol())?.a||[]);
+ let msg='Nến ngày sử dụng dữ liệu OHLCV gốc.';
+ if(chartInterval==='W')msg='Nến tuần tổng hợp từ dữ liệu ngày: mở cửa phiên đầu tuần, cao/thấp nhất tuần, đóng cửa phiên cuối tuần và tổng khối lượng.';
+ if(chartInterval==='M')msg='Nến tháng tổng hợp từ dữ liệu ngày.';
+ $('chartCandleInfo').innerHTML='<span class="muted tiny">'+msg+'</span>';
+});
+document.querySelectorAll('[data-chart-range]').forEach(b=>b.addEventListener('click',()=>{chartRange=b.dataset.chartRange;chartView={count:null,endOffset:0};document.querySelectorAll('[data-chart-range]').forEach(x=>x.classList.toggle('active',x===b));const m=metrics(activeSymbol());drawProfessionalChart($('priceChart'),m?.a||[])}));document.querySelectorAll('[data-chart-toggle]').forEach(el=>{const opts={ma10:true,ma20:true,ma50:true,bb:false,volume:true,rsi:true,macd:false,wyckoff:true,levels:false,...chartOptions()};el.checked=!!opts[el.dataset.chartToggle];el.addEventListener('change',()=>{opts[el.dataset.chartToggle]=el.checked;localStorage.setItem('vsl_chart_options',JSON.stringify(opts));const canvas=$('priceChart');canvas.style.height=(560+(['volume','rsi','macd'].filter(k=>opts[k]).length-2)*65)+'px';drawProfessionalChart(canvas,metrics(activeSymbol())?.a||[])})});document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.page)));$('refreshBtn').onclick=async()=>{await syncMarketData(true);render();toast('Đã kiểm tra dữ liệu tự động và tính lại chỉ báo.')};$('analysisSymbol').onchange=()=>{state.selectedSymbol=$('analysisSymbol').value;save();renderAnalysis();renderDashboard()};async function openWatchlistRequest(action,sym,exchange='HOSE'){
  const stocks=state.stocks.map(s=>s.symbol);
  const exchanges=Object.fromEntries(state.stocks.map(s=>[s.symbol,['HOSE','HNX','UPCOM'].includes(s.exchange)?s.exchange:'HOSE']));
  try{
