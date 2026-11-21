@@ -135,7 +135,13 @@ function advancedAnalysis(m){
   const prHi=Math.max(...prior.map(q=>+q.high)),prLo=Math.min(...prior.map(q=>+q.low));
   const avgV=prior.reduce((s,q)=>s+(+q.volume||0),0)/prior.length,avgR=prior.reduce((s,q)=>s+(+q.high-(+q.low)),0)/prior.length;
   const sp=Math.max(0,+z.high-(+z.low)),cp=sp?(+z.close-(+z.low))/sp:.5,vr=avgV?(+z.volume)/avgV:0,sr=avgR?sp/avgR:0;
-  const add=(name,desc,level)=>events.push({date:z.date,name,desc,level});
+  const add=(name,desc,level)=>{
+  const strength=vr>=1.5&&sr>=1.2?'Mạnh về spread/volume':vr>=1.25||sr>=1.2?'Trung bình':'Yếu/chưa nổi bật';
+  const next=a.slice(j+1,Math.min(a.length,j+4));
+  let follow='Chưa có phiên sau để đánh giá';
+  if(next.length){const closes=next.map(q=>+q.close);if(name.includes('Spring')||name.includes('SOS'))follow=Math.max(...closes)>+z.close?'Có nhịp tăng tiếp diễn':'Chưa thấy tăng tiếp diễn';else if(name.includes('Upthrust')||name.includes('SOW'))follow=Math.min(...closes)<+z.close?'Có áp lực giảm tiếp diễn':'Chưa thấy giảm tiếp diễn';else follow='Cần đọc cùng vị trí trong xu hướng';}
+  events.push({date:z.date,name,desc,level,strength,follow,volRatio:vr,spreadRatio:sr,closePosition:cp});
+ };
   if(+z.low<prLo&&+z.close>prLo&&cp>.55)add('Spring ứng viên','Xuyên đáy 20 phiên rồi đóng trở lại phía trên; cần phiên Test/đà tăng xác nhận.','warn');
   if(+z.high>prHi&&+z.close<prHi&&cp<.55)add('Upthrust ứng viên','Vượt đỉnh 20 phiên nhưng đóng dưới vùng breakout; theo dõi thất bại tiếp diễn.','bad');
   if(+z.close>+z.open&&cp>=.75&&sr>=1.2&&vr>=1.25)add('SOS ứng viên','Spread rộng, đóng gần cao, khối lượng cao hơn nền; chờ LPS/retest.','good');
@@ -150,7 +156,7 @@ function advancedAnalysis(m){
  else if(m.ma50!=null&&x.close<m.ma50&&position>60)phase='Có thể là hồi kỹ thuật trong cấu trúc yếu; cần theo dõi LPSY/SOW';
  else if(position<30&&m.rsi!=null&&m.rsi<45)phase='Nằm gần vùng thấp của biên 1 năm; cần tìm SC–AR–ST/Spring, chưa mặc định là tích lũy';
  else if(position>75&&m.rsi!=null&&m.rsi>60)phase='Nằm gần vùng cao của biên 1 năm; cần cảnh giác BC/UTAD và kiểm tra cung';
- const rows=lastEvents.length?lastEvents.map(e=>'<tr><td>'+e.date+'</td><td><b>'+e.name+'</b><br><span class="muted tiny">'+e.desc+'</span></td></tr>').join(''):'<tr><td colspan="2">Chưa phát hiện sự kiện nổi bật theo bộ lọc hiện tại.</td></tr>';
+ const rows=lastEvents.length?lastEvents.map(e=>'<tr><td>'+e.date+'</td><td><b>'+e.name+'</b> · '+e.strength+'<br><span class="muted tiny">'+e.desc+' KL/TB20 '+fmt(e.volRatio,2)+'× · Spread/TB20 '+fmt(e.spreadRatio,2)+'× · Đóng cửa '+fmt(e.closePosition*100,0)+'% biên độ. '+e.follow+'.</span></td></tr>').join(''):'<tr><td colspan="2">Chưa phát hiện sự kiện nổi bật theo bộ lọc hiện tại.</td></tr>';
  return '<div class="notice"><b>Bối cảnh 1 năm</b><p>'+trend+' · Biên giá '+fmtPrice(lo)+'–'+fmtPrice(hi)+' · Vị trí hiện tại '+fmt(position,0)+'% biên độ.</p><p>Hiệu suất 1 tháng: '+pct(change(21))+' · 3 tháng: '+pct(change(63))+' · 6 tháng: '+pct(change(126))+' · 12 tháng: '+pct(change(252))+' · MA: '+maText+'</p><p><b>Giả thuyết pha:</b> '+phase+'</p><p class="muted tiny">Phân loại pha là giả thuyết dựa trên vị trí giá và MA, không thay thế việc xác nhận cấu trúc SC/AR/ST hoặc BC/AR/ST.</p></div><h3 style="font-size:14px;margin:14px 0 6px">Lịch sử tín hiệu Wyckoff + VSA (60 phiên gần nhất)</h3><div class="tablewrap"><table><thead><tr><th>Ngày</th><th>Sự kiện và diễn giải</th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="muted tiny">Các tín hiệu là bộ lọc định lượng: so sánh spread và volume với 20 phiên trước đó, không phải nhận diện chắc chắn hành vi tổ chức. No Supply/No Demand, Spring/Upthrust và SOS/SOW cần xác nhận bằng diễn biến sau tín hiệu.</p>';
 }
 function fmtPrice(n){return n==null?'—':fmt(n,2)}function activeSymbol(){return $('analysisSymbol')?.value||state.stocks[0]?.symbol}function fillSelect(id,val){let el=$(id);if(!el)return;let old=val||el.value;el.innerHTML=state.stocks.map(s=>`<option value="${s.symbol}">${s.symbol}</option>`).join('');if(state.stocks.some(s=>s.symbol===old))el.value=old}
