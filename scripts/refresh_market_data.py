@@ -167,6 +167,50 @@ def fetch_history(symbol, exchange, start_date, end_date):
     return all_rows
 
 
+
+def fetch_index_history(symbol, lookback_days):
+    """Fetch index candles from the free DNSE/Vietcap fallback chain."""
+    from vn_market_data import get_ohlcv
+
+    rows = get_ohlcv(
+        symbol,
+        lookback_days=lookback_days,
+        is_index=True,
+        ttl_s=0,
+    )
+    clean = []
+    for item in rows or []:
+        day = str(item.get("date") or "")
+        if not day:
+            continue
+        row = {
+            "date": day,
+            "open": as_float(item.get("open")),
+            "high": as_float(item.get("high")),
+            "low": as_float(item.get("low")),
+            "close": as_float(item.get("close")),
+            "volume": as_float(item.get("volume")),
+        }
+        if all(row[key] is not None for key in ("open", "high", "low", "close", "volume")):
+            clean.append(row)
+    clean.sort(key=lambda row: row["date"])
+    if len(clean) < 100:
+        raise RuntimeError(
+            f"Provider trả về quá ít nến chỉ số ({len(clean)}); không thay dữ liệu cũ."
+        )
+    return clean
+
+
+def load_previous_indices():
+    """Read the last known-good index series so a provider outage never blanks the UI."""
+    try:
+        with OUTPUT_PATH.open("r", encoding="utf-8") as file:
+            previous = json.load(file)
+        indices = previous.get("indices") or {}
+        return indices if isinstance(indices, dict) else {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
 def main():
     config = load_config()
     end_date = date.today()
@@ -215,31 +259,35 @@ def main():
             print(f"SOURCE ERROR: {message}")
         time.sleep(0.4)
 
-    # Try index symbols through the same endpoint. Some CafeF deployments may
-    # not expose index candles here; failures are logged without losing stocks.
+    # Fetch indices from the free GitHub library. It uses DNSE first and
+    # Vietcap as fallback, with normalized daily OHLCV and index units unscaled.
+    # Keep the previous series per index if every provider fails or returns thin data.
+    previous_indices = load_previous_indices()
+    index_sources = {}
+    lookback_days = (end_date - start_date).days + 1
     for symbol in config.get("indices", []):
         symbol = str(symbol).strip().upper()
         if not symbol:
             continue
         try:
-            print(f"Fetching index {symbol} from CafeF")
-            rows_by_date = {}
-            window_start = start_date
-            while window_start <= end_date:
-                window_end = min(window_start + timedelta(days=364), end_date)
-                print(f"{symbol}: requesting window {window_start} to {window_end}")
-                for row in fetch_history(symbol, "HOSE", window_start, window_end):
-                    rows_by_date[row["date"]] = row
-                window_start = window_end + timedelta(days=1)
-                time.sleep(0.25)
-            rows = [rows_by_date[key] for key in sorted(rows_by_date)]
+            print(f"Fetching index {symbol} via vn-market-data (DNSE -> Vietcap)")
+            rows = fetch_index_history(symbol, lookback_days)
+            rows = [row for row in rows if start_date.isoformat() <= row["date"] <= end_date.isoformat()]
+            if len(rows) < 100:
+                raise RuntimeError(f"Chỉ còn {len(rows)} nến trong khoảng yêu cầu.")
             indices[symbol] = rows
+            index_sources[symbol] = "vn-market-data (DNSE/Vietcap fallback)"
             print(f"SUCCESS index {symbol}: {len(rows)} sessions, first={rows[0]['date']}, last={rows[-1]['date']}")
-        except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as error:
+        except Exception as error:
             message = f"Index {symbol}: {type(error).__name__}: {error}"
             errors.append(message)
             print(f"SOURCE ERROR: {message}")
-        time.sleep(0.4)
+            old_rows = previous_indices.get(symbol) or []
+            if isinstance(old_rows, list) and old_rows:
+                indices[symbol] = old_rows
+                index_sources[symbol] = "previous-known-good snapshot (provider failed)"
+                print(f"RESTORED previous index snapshot {symbol}: {len(old_rows)} rows")
+        time.sleep(0.25)
 
     # Preserve the last known-good snapshot if every symbol failed.
     if not stocks and not indices:
@@ -250,7 +298,8 @@ def main():
 
     payload = {
         "updated_at": datetime.now(TIMEZONE).isoformat(),
-        "source": "CafeF PriceHistory API",
+        "source": "CafeF (stocks) + vn-market-data (indices)",
+        "index_sources": index_sources,
         "timezone": "Asia/Ho_Chi_Minh",
         "lookback_days": (end_date - start_date).days,
         "lookback_mode": "2024-calendar-start",
