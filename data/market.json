@@ -1,12 +1,14 @@
 {
-  "updated_at": "2026-11-24T22:53:11.246535+07:00",
+  "updated_at": "2026-11-24T23:11:42.817357+07:00",
   "source": "CafeF (stocks) + vn-market-data (indices)",
   "index_sources": {
     "VNINDEX": "vn-market-data (DNSE/Vietcap fallback)"
   },
   "timezone": "Asia/Ho_Chi_Minh",
   "lookback_days": 1058,
-  "lookback_mode": "2024-calendar-start",
+  "lookback_mode": "full-history-plus-incremental-overlap",
+  "refresh_mode": "incremental",
+  "refreshed_stocks": [],
   "lookback_start": "2024-01-01",
   "lookback_end": "2026-11-24",
   "stocks": {},
@@ -5762,11 +5764,11 @@
     "DHC: TimeoutError: The read operation timed out",
     "PC1: TimeoutError: The read operation timed out",
     "VIX: TimeoutError: The read operation timed out",
-    "CMG: TimeoutError: The read operation timed out",
-    "HDG: TimeoutError: The read operation timed out",
+    "CMG: RuntimeError: CafeF không trả về nến OHLCV hợp lệ cho CMG",
+    "HDG: RuntimeError: CafeF không trả về nến OHLCV hợp lệ cho HDG",
     "FPT: TimeoutError: The read operation timed out",
     "HPG: TimeoutError: The read operation timed out",
-    "Index HNXINDEX: RuntimeError: Provider trả về quá ít nến chỉ số (0); không thay dữ liệu cũ.",
-    "Index UPCOMINDEX: RuntimeError: Provider trả về quá ít nến chỉ số (0); không thay dữ liệu cũ."
+    "Index HNXINDEX: RuntimeError: Provider trả về quá ít nến chỉ số (0; cần tối thiểu 1).",
+    "Index UPCOMINDEX: RuntimeError: Provider trả về quá ít nến chỉ số (0; cần tối thiểu 1)."
   ]
 }
