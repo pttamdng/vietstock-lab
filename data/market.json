@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-24T23:21:56.452667+07:00",
+  "updated_at": "2026-11-25T03:43:56.626560+07:00",
   "source": "CafeF (stocks) + vn-market-data (indices)",
   "index_sources": {
     "VNINDEX": "vn-market-data (DNSE/Vietcap fallback)"
