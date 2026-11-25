@@ -268,7 +268,7 @@ function chartVisibleSeries(source){
   const d=chartParseDate(z.date);
   return d&&['open','high','low','close'].every(k=>Number.isFinite(+z[k]))&&+z.high>=+z.low;
  }).sort((a,b)=>chartParseDate(a.date)-chartParseDate(b.date));
- if(chartRange==='All'||!valid.length)return valid;
+ if(String(chartRange).toUpperCase()==='ALL'||!valid.length)return valid;
  const months=chartRange==='1M'?1:chartRange==='3M'?3:chartRange==='6M'?6:chartRange==='1Y'?12:0;
  if(!months)return valid;
  const last=chartParseDate(valid[valid.length-1].date),cutoff=new Date(last);
@@ -305,6 +305,17 @@ function drawProfessionalChart(canvas,all){
  const firstTime=chartParseDate(data[0]?.date)?.getTime()||0,lastTime=chartParseDate(data[data.length-1]?.date)?.getTime()||firstTime,span=Math.max(1,lastTime-firstTime);
  const x=i=>{const t=chartParseDate(data[Math.max(0,Math.min(data.length-1,i))]?.date)?.getTime();return left+((Number.isFinite(t)?t:firstTime)-firstTime)/span*plotW},py=v=>top+(max-v)/(max-min)*priceH;
  const candleW=Math.max(2,Math.min(11,plotW/Math.max(1,data.length)*.62));
+ // Visually mark long gaps so a missing history section cannot look like
+ // a real one-session price collapse.
+ for(let i=1;i<data.length;i++){
+  const prev=chartParseDate(data[i-1].date),curr=chartParseDate(data[i].date);
+  const gapDays=prev&&curr?Math.round((curr-prev)/86400000):0;
+  if(gapDays>14){
+   const gx=(x(i-1)+x(i))/2;
+   c.strokeStyle=C.muted;c.setLineDash([3,4]);c.beginPath();c.moveTo(gx,top);c.lineTo(gx,top+priceH);c.stroke();c.setLineDash([]);
+   c.fillStyle=C.muted;c.textAlign='center';c.font='9px system-ui';c.fillText('DATA GAP '+gapDays+'d',gx,top+13);
+  }
+ }
  c.font='10px system-ui';c.lineWidth=1;
  for(let k=0;k<=4;k++){const val=max-(max-min)*k/4,yy=top+priceH*k/4;c.strokeStyle=C.grid;c.beginPath();c.moveTo(left,yy);c.lineTo(w-right,yy);c.stroke();c.fillStyle=C.muted;c.textAlign='right';c.fillText(fmt(val,2),left-6,yy+3)}
  const drawLine=(arr,color,width=1.4,dash=[])=>{c.beginPath();let begun=false,prevDate=null;arr.slice(start,end).forEach((v,i)=>{const currentDate=chartParseDate(data[i]?.date);if(prevDate&&currentDate&&(currentDate-prevDate)>14*86400000)begun=false;prevDate=currentDate;if(v==null||!Number.isFinite(v)){begun=false;return}if(!begun){c.moveTo(x(i),py(v));begun=true}else c.lineTo(x(i),py(v))});c.strokeStyle=color;c.lineWidth=width;c.setLineDash(dash);c.stroke();c.setLineDash([])};
