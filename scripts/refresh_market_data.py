@@ -264,6 +264,40 @@ def incremental_start(previous_rows, full_start, overlap_days=10):
     return max(full_start, max(dates) - timedelta(days=overlap_days))
 
 
+def missing_date_ranges(previous_rows, full_start, end_date, gap_threshold_days=14, padding_days=3):
+    """Return date ranges needing repair for long gaps inside existing history."""
+    dated = sorted({
+        day for row in (previous_rows or [])
+        if isinstance(row, dict)
+        for day in [parse_date(row.get("date"))]
+        if day and full_start <= day <= end_date
+    })
+    ranges = []
+    for left, right in zip(dated, dated[1:]):
+        gap_days = (right - left).days
+        if gap_days > gap_threshold_days:
+            start = max(full_start, left + timedelta(days=1) - timedelta(days=padding_days))
+            finish = min(end_date, right - timedelta(days=1) + timedelta(days=padding_days))
+            if start <= finish:
+                ranges.append((start, finish, f"history gap {left}..{right} ({gap_days} days)"))
+    return ranges
+
+
+def merge_date_ranges(ranges):
+    """Merge overlapping repair/update ranges while retaining their labels."""
+    if not ranges:
+        return []
+    ordered = sorted(ranges, key=lambda item: item[0])
+    merged = []
+    for start, finish, label in ordered:
+        if not merged or start > merged[-1][1] + timedelta(days=1):
+            merged.append([start, finish, [label]])
+        else:
+            merged[-1][1] = max(merged[-1][1], finish)
+            merged[-1][2].append(label)
+    return [(start, finish, ", ".join(labels)) for start, finish, labels in merged]
+
+
 def main():
     run_started = time.perf_counter()
     config = load_config()
@@ -300,24 +334,29 @@ def main():
         try:
             print(f"Fetching {symbol} from CafeF ({exchange}), {fetch_start} to {end_date} [{mode}]")
             rows_by_date = {}
-            # Build <=365-day windows, then fetch newest first. A slow old
-            # historical window must never prevent today's candles from landing.
+            # Refresh recent tail and repair long holes inside stored history.
+            ranges = [(fetch_start, end_date, "recent overlap/tail")]
+            ranges.extend(missing_date_ranges(old_rows, start_date, end_date))
+            ranges = merge_date_ranges(ranges)
             windows = []
-            window_start = fetch_start
-            while window_start <= end_date:
-                window_end = min(window_start + timedelta(days=364), end_date)
-                windows.append((window_start, window_end))
-                window_start = window_end + timedelta(days=1)
+            for range_start, range_end, label in ranges:
+                print(f"{symbol}: repair range {range_start} to {range_end} ({label})")
+                window_start = range_start
+                while window_start <= range_end:
+                    window_end = min(window_start + timedelta(days=364), range_end)
+                    windows.append((window_start, window_end, label))
+                    window_start = window_end + timedelta(days=1)
 
-            for window_start, window_end in reversed(windows):
-                print(f"{symbol}: requesting window {window_start} to {window_end}")
+            # Fetch newest ranges first so old gap repairs cannot block latest data.
+            for window_start, window_end, label in reversed(windows):
+                print(f"{symbol}: requesting window {window_start} to {window_end} ({label})")
                 try:
                     window_rows = fetch_history(symbol, exchange, window_start, window_end)
                     for row in window_rows:
                         rows_by_date[row["date"]] = row
                 except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as window_error:
                     print(
-                        f"{symbol}: skip failed historical window {window_start}..{window_end}: "
+                        f"{symbol}: skip failed range {window_start}..{window_end}: "
                         f"{type(window_error).__name__}: {window_error}"
                     )
                 time.sleep(0.15)
