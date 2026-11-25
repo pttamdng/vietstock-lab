@@ -69,6 +69,25 @@ def parse_date(value):
     return None
 
 
+def read_json_with_retry(request, symbol, page):
+    for attempt in range(1, 4):
+        try:
+            with urlopen(request, timeout=60) as response:
+                return json.loads(response.read().decode("utf-8-sig"))
+        except HTTPError as error:
+            if error.code not in (408, 429, 500, 502, 503, 504) or attempt == 3:
+                raise
+            delay = 2 * attempt
+            print(f"{symbol}: HTTP {error.code} page {page}; retry {attempt}/2 after {delay}s")
+            time.sleep(delay)
+        except (TimeoutError, URLError, OSError) as error:
+            if attempt == 3:
+                raise
+            delay = 2 * attempt
+            print(f"{symbol}: {type(error).__name__} page {page}; retry {attempt}/2 after {delay}s")
+            time.sleep(delay)
+    raise RuntimeError(f"CafeF returned no response for {symbol} page {page}")
+
 def request_page(symbol, exchange, start_date, end_date, page):
     params = urlencode({
         "ExchangeType": exchange,
@@ -92,8 +111,7 @@ def request_page(symbol, exchange, start_date, end_date, page):
             "Accept": "application/json, text/javascript, */*; q=0.01",
         },
     )
-    with urlopen(request, timeout=60) as response:
-        payload = json.loads(response.read().decode("utf-8-sig"))
+    payload = read_json_with_retry(request, symbol, page)
 
     if not payload.get("Success", True):
         raise RuntimeError(
