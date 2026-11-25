@@ -233,9 +233,7 @@ function chartOptions(){try{return JSON.parse(localStorage.getItem('vsl_chart_op
 function wyckoffMarker(z,prior){if(!z||!prior||prior.length<20)return null;const ph=Math.max(...prior.map(q=>+q.high)),pl=Math.min(...prior.map(q=>+q.low)),avgVol=prior.reduce((s,q)=>s+(+q.volume||0),0)/prior.length,avgSpread=prior.reduce((s,q)=>s+Math.max(0,+q.high- +q.low),0)/prior.length,spread=Math.max(0,+z.high- +z.low),pos=spread?(+z.close- +z.low)/spread:.5,vr=avgVol?(+z.volume||0)/avgVol:0,wide=avgSpread>0&&spread>=avgSpread*1.2,highVol=vr>=1.25;if(+z.low<pl&&+z.close>pl&&pos>.55)return {code:'SP',name:'Spring',tone:'good',color:'#16a879',detail:'Xuyên hỗ trợ rồi đóng cửa trở lại phía trên'};if(+z.high>ph&&+z.close<ph&&pos<.6)return {code:'UT',name:'Upthrust',tone:'bad',color:'#dc5365',detail:'Vượt kháng cự nhưng đóng cửa trở lại bên dưới'};if(+z.close>+z.open&&pos>=.75&&wide&&highVol&&+z.close>ph)return {code:'SOS',name:'SOS',tone:'good',color:'#16a879',detail:'Nến tăng rộng, đóng gần cao nhất, volume cao và vượt đỉnh'};if(+z.close<+z.open&&pos<=.25&&wide&&highVol&&+z.close<pl)return {code:'SOW',name:'SOW',tone:'bad',color:'#dc5365',detail:'Nến giảm rộng, đóng gần thấp nhất, volume cao và thủng đáy'};return null}
 function chartDefaultCount(length){
  let base=length;
- if(chartInterval==='M')base=chartRange==='1M'?1:chartRange==='3M'?3:chartRange==='6M'?6:chartRange==='1Y'?12:length;
- else if(chartInterval==='W')base=chartRange==='1M'?5:chartRange==='3M'?13:chartRange==='6M'?26:chartRange==='1Y'?52:length;
- else base=chartRange==='1M'?22:chartRange==='3M'?66:chartRange==='6M'?132:chartRange==='1Y'?252:length;
+ if(chartInterval==='M'||chartInterval==='W'||chartInterval==='D')base=length;
  const minimum=chartInterval==='M'?1:(chartInterval==='W'?2:10);
  return Math.max(minimum,Math.min(length,base||length));
 }
@@ -265,6 +263,22 @@ function chartSeries(source){
  });
  return [...groups.values()].sort((x,y)=>x.date.localeCompare(y.date));
 }
+function chartVisibleSeries(source){
+ const all=Array.isArray(source)?source:[],valid=all.filter(z=>{
+  const d=chartParseDate(z.date);
+  return d&&['open','high','low','close'].every(k=>Number.isFinite(+z[k]))&&+z.high>=+z.low;
+ }).sort((a,b)=>chartParseDate(a.date)-chartParseDate(b.date));
+ if(chartRange==='All'||!valid.length)return valid;
+ const months=chartRange==='1M'?1:chartRange==='3M'?3:chartRange==='6M'?6:chartRange==='1Y'?12:0;
+ if(!months)return valid;
+ const last=chartParseDate(valid[valid.length-1].date),cutoff=new Date(last);
+ const day=cutoff.getUTCDate();
+ cutoff.setUTCDate(1);
+ cutoff.setUTCMonth(cutoff.getUTCMonth()-months);
+ const lastDay=new Date(Date.UTC(cutoff.getUTCFullYear(),cutoff.getUTCMonth()+1,0)).getUTCDate();
+ cutoff.setUTCDate(Math.min(day,lastDay));
+ return valid.filter(z=>chartParseDate(z.date)>=cutoff);
+}
 function chartDateLabel(value){
  const s=String(value||'');
  if(chartInterval==='M')return s.slice(5,7)+'/'+s.slice(0,4);
@@ -272,7 +286,7 @@ function chartDateLabel(value){
  return s;
 }
 function drawProfessionalChart(canvas,all){
- all=chartSeries(all);
+ all=chartVisibleSeries(chartSeries(all));
  if(!canvas)return;
  const opt={ma10:true,ma20:true,ma50:true,bb:false,volume:true,rsi:true,macd:false,wyckoff:true,levels:false,...chartOptions()};
  canvas.style.height=(430+['volume','rsi','macd'].filter(k=>opt[k]).length*65)+'px';
@@ -288,8 +302,9 @@ function drawProfessionalChart(canvas,all){
  const left=49,right=48,top=22,bottom=22,usable=Math.max(220,h-top-bottom),priceH=usable*(panels.length===0?1:panels.length===1?.68:panels.length===2?.56:.48);
  const gap=panels.length?16:0,each=panels.length?(usable-priceH-gap*(panels.length-1))/panels.length:0;
  const plotW=w-left-right,lo=Math.min(...data.map(x=>+x.low),...(opt.bb?bbLow.slice(start).filter(Number.isFinite):[])),hi=Math.max(...data.map(x=>+x.high),...(opt.bb?bbUp.slice(start).filter(Number.isFinite):[])),pad=(hi-lo)*.07||.5,min=lo-pad,max=hi+pad;
- const x=i=>left+(i+.5)*plotW/data.length,py=v=>top+(max-v)/(max-min)*priceH;
- const candleW=Math.max(2,Math.min(11,plotW/data.length*.62));
+ const firstTime=chartParseDate(data[0]?.date)?.getTime()||0,lastTime=chartParseDate(data[data.length-1]?.date)?.getTime()||firstTime,span=Math.max(1,lastTime-firstTime);
+ const x=i=>{const t=chartParseDate(data[Math.max(0,Math.min(data.length-1,i))]?.date)?.getTime();return left+((Number.isFinite(t)?t:firstTime)-firstTime)/span*plotW},py=v=>top+(max-v)/(max-min)*priceH;
+ const candleW=Math.max(2,Math.min(11,plotW/Math.max(1,data.length)*.62));
  c.font='10px system-ui';c.lineWidth=1;
  for(let k=0;k<=4;k++){const val=max-(max-min)*k/4,yy=top+priceH*k/4;c.strokeStyle=C.grid;c.beginPath();c.moveTo(left,yy);c.lineTo(w-right,yy);c.stroke();c.fillStyle=C.muted;c.textAlign='right';c.fillText(fmt(val,2),left-6,yy+3)}
  const drawLine=(arr,color,width=1.4,dash=[])=>{c.beginPath();let begun=false;arr.slice(start).forEach((v,i)=>{if(v==null||!Number.isFinite(v)){begun=false;return}if(!begun){c.moveTo(x(i),py(v));begun=true}else c.lineTo(x(i),py(v))});c.strokeStyle=color;c.lineWidth=width;c.setLineDash(dash);c.stroke();c.setLineDash([])};
@@ -311,7 +326,7 @@ function drawProfessionalChart(canvas,all){
 }
 
 function inspectChartCandle(canvas,all,event){
- all=chartSeries(all);
+ all=chartVisibleSeries(chartSeries(all));
  const panel=$('chartCandleInfo');if(!panel||!canvas||!all.length)return;panel.hidden=false;
  const count=Math.max(chartInterval==='M'?1:chartInterval==='W'?2:10,Math.min(all.length,chartView.count||chartDefaultCount(all.length))),end=Math.max(count,all.length-(chartView.endOffset||0)),start=Math.max(0,end-count),data=all.slice(start,end),rect=canvas.getBoundingClientRect();
  const px=(event.clientX-rect.left)*(canvas.clientWidth/rect.width),left=49,right=48,plotW=canvas.clientWidth-left-right;
@@ -349,10 +364,10 @@ function toast(s){let t=$('toast');t.textContent=s;t.style.display='block';clear
 const chartCanvas=$('priceChart');if(chartCanvas){
  chartCanvas.style.touchAction='none';
  chartCanvas.addEventListener('pointerdown',e=>{chartCanvas.setPointerCapture?.(e.pointerId);chartPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(chartPointers.size===1)chartDrag={x:e.clientX,start:chartView.endOffset||0};else if(chartPointers.size===2){const p=[...chartPointers.values()];chartPinch={distance:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),count:chartView.count||chartDefaultCount(chartSeries(metrics(activeSymbol())?.a||[]).length)};}});
- chartCanvas.addEventListener('pointermove',e=>{if(!chartPointers.has(e.pointerId))return;chartPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});const all=chartSeries(metrics(activeSymbol())?.a||[]);if(chartPointers.size===1&&chartDrag){const dx=e.clientX-chartDrag.x,step=Math.max(1,Math.round(Math.abs(dx)/Math.max(1,chartCanvas.clientWidth-97)*(chartView.count||66)));if(Math.abs(dx)>3){chartView.endOffset=Math.max(0,Math.min(Math.max(0,all.length-10),chartDrag.start+(dx>0?step:-step)));drawProfessionalChart(chartCanvas,all);inspectChartCandle(chartCanvas,all,e);}}else if(chartPointers.size===2&&chartPinch){const p=[...chartPointers.values()],dist=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),factor=chartPinch.distance/Math.max(1,dist);chartView.count=Math.max(10,Math.min(all.length,Math.round(chartPinch.count*factor)));drawProfessionalChart(chartCanvas,all);}});
+ chartCanvas.addEventListener('pointermove',e=>{if(!chartPointers.has(e.pointerId))return;chartPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});const all=chartVisibleSeries(chartSeries(metrics(activeSymbol())?.a||[]));if(chartPointers.size===1&&chartDrag){const dx=e.clientX-chartDrag.x,step=Math.max(1,Math.round(Math.abs(dx)/Math.max(1,chartCanvas.clientWidth-97)*(chartView.count||66)));if(Math.abs(dx)>3){chartView.endOffset=Math.max(0,Math.min(Math.max(0,all.length-10),chartDrag.start+(dx>0?step:-step)));drawProfessionalChart(chartCanvas,all);inspectChartCandle(chartCanvas,all,e);}}else if(chartPointers.size===2&&chartPinch){const p=[...chartPointers.values()],dist=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),factor=chartPinch.distance/Math.max(1,dist);chartView.count=Math.max(10,Math.min(all.length,Math.round(chartPinch.count*factor)));drawProfessionalChart(chartCanvas,all);}});
  const end=e=>{const tap=chartPointers.get(e.pointerId);if(tap&&Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<9&&chartPointers.size===1)inspectChartCandle(chartCanvas,metrics(activeSymbol())?.a||[],e);chartPointers.delete(e.pointerId);if(chartPointers.size===0){chartDrag=null;chartPinch=null;}else if(chartPointers.size===1){const p=[...chartPointers.values()][0];chartDrag={x:p.x,start:chartView.endOffset||0};chartPinch=null;}};
  chartCanvas.addEventListener('pointerup',end);chartCanvas.addEventListener('pointercancel',end);
- chartCanvas.addEventListener('wheel',e=>{e.preventDefault();const all=chartSeries(metrics(activeSymbol())?.a||[]),base=chartView.count||chartDefaultCount(all.length);chartView.count=Math.max(10,Math.min(all.length,Math.round(base*(e.deltaY>0?1.15:.87))));drawProfessionalChart(chartCanvas,all);},{passive:false});
+ chartCanvas.addEventListener('wheel',e=>{e.preventDefault();const all=chartVisibleSeries(chartSeries(metrics(activeSymbol())?.a||[])),base=chartView.count||chartDefaultCount(all.length);chartView.count=Math.max(10,Math.min(all.length,Math.round(base*(e.deltaY>0?1.15:.87))));drawProfessionalChart(chartCanvas,all);},{passive:false});
 }
 $('chartZoomIn')?.addEventListener('click',()=>{const all=chartSeries(metrics(activeSymbol())?.a||[]);chartView.count=Math.max(chartInterval==='M'?1:chartInterval==='W'?2:10,Math.round((chartView.count||all.length*.25)*.75));drawProfessionalChart($('priceChart'),all)});
 $('chartZoomOut')?.addEventListener('click',()=>{const all=chartSeries(metrics(activeSymbol())?.a||[]);chartView.count=Math.min(all.length,Math.round((chartView.count||all.length*.25)*1.35));drawProfessionalChart($('priceChart'),all)});
