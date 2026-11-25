@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-25T13:08:53.566268+07:00",
+  "updated_at": "2026-11-25T13:17:35.355475+07:00",
   "source": "CafeF (stocks) + vn-market-data (indices)",
   "index_sources": {
     "VNINDEX": "vn-market-data (DNSE/Vietcap fallback)"
@@ -10,7 +10,6 @@
   "refresh_mode": "incremental",
   "refreshed_stocks": [
     "FPT",
-    "HPG",
     "PC1"
   ],
   "lookback_start": "2024-01-01",
@@ -11893,8 +11892,9 @@
   },
   "errors": [
     "DHC: RuntimeError: CafeF không trả về nến OHLCV hợp lệ cho DHC",
-    "VIX: RuntimeError: CafeF không trả về nến OHLCV hợp lệ cho VIX",
     "CMG: RuntimeError: CafeF không trả về nến OHLCV hợp lệ cho CMG",
+    "VIX: RuntimeError: CafeF không trả về nến OHLCV hợp lệ cho VIX",
+    "HPG: RuntimeError: CafeF không trả về nến OHLCV hợp lệ cho HPG",
     "HDG: RuntimeError: CafeF không trả về nến OHLCV hợp lệ cho HDG",
     "Index HNXINDEX: RuntimeError: Provider trả về quá ít nến chỉ số (0; cần tối thiểu 1).",
     "Index UPCOMINDEX: RuntimeError: Provider trả về quá ít nến chỉ số (0; cần tối thiểu 1)."
