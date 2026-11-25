@@ -134,9 +134,18 @@ def fetch_history(symbol, exchange, start_date, end_date):
     total_count = None
 
     for page in range(1, MAX_PAGES + 1):
-        rows, reported_total = request_page(
-            symbol, exchange, start_date, end_date, page
-        )
+        try:
+            rows, reported_total = request_page(
+                symbol, exchange, start_date, end_date, page
+            )
+        except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as error:
+            if all_rows:
+                print(
+                    f"{symbol}: page {page} failed after {len(all_rows)} valid rows "
+                    f"({type(error).__name__}: {error}); returning partial window"
+                )
+                break
+            raise
         if reported_total is not None:
             total_count = reported_total
         if not rows:
@@ -291,16 +300,27 @@ def main():
         try:
             print(f"Fetching {symbol} from CafeF ({exchange}), {fetch_start} to {end_date} [{mode}]")
             rows_by_date = {}
+            # Build <=365-day windows, then fetch newest first. A slow old
+            # historical window must never prevent today's candles from landing.
+            windows = []
             window_start = fetch_start
             while window_start <= end_date:
                 window_end = min(window_start + timedelta(days=364), end_date)
-                print(f"{symbol}: requesting window {window_start} to {window_end}")
-                window_rows = fetch_history(symbol, exchange, window_start, window_end)
-                for row in window_rows:
-                    rows_by_date[row["date"]] = row
+                windows.append((window_start, window_end))
                 window_start = window_end + timedelta(days=1)
-                if window_start <= end_date:
-                    time.sleep(0.1)
+
+            for window_start, window_end in reversed(windows):
+                print(f"{symbol}: requesting window {window_start} to {window_end}")
+                try:
+                    window_rows = fetch_history(symbol, exchange, window_start, window_end)
+                    for row in window_rows:
+                        rows_by_date[row["date"]] = row
+                except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as window_error:
+                    print(
+                        f"{symbol}: skip failed historical window {window_start}..{window_end}: "
+                        f"{type(window_error).__name__}: {window_error}"
+                    )
+                time.sleep(0.15)
             fresh_rows = [rows_by_date[key] for key in sorted(rows_by_date)]
             merged_rows = merge_rows(old_rows, fresh_rows)
             if not merged_rows:
