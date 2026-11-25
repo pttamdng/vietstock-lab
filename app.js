@@ -370,7 +370,7 @@ const chartCanvas=$('priceChart');if(chartCanvas){
  chartCanvas.addEventListener('wheel',e=>{e.preventDefault();const all=chartVisibleSeries(chartSeries(metrics(activeSymbol())?.a||[])),base=chartView.count||chartDefaultCount(all.length);chartView.count=Math.max(10,Math.min(all.length,Math.round(base*(e.deltaY>0?1.15:.87))));drawProfessionalChart(chartCanvas,all);},{passive:false});
 }
 $('chartZoomIn')?.addEventListener('click',()=>{const all=chartVisibleSeries(chartSeries(metrics(activeSymbol())?.a||[]));chartView.count=Math.max(chartInterval==='M'?1:chartInterval==='W'?2:10,Math.round((chartView.count||all.length*.25)*.75));drawProfessionalChart($('priceChart'),all)});
-$('chartZoomOut')?.addEventListener('click',()=>{const all=chartSeries(metrics(activeSymbol())?.a||[]);chartView.count=Math.min(all.length,Math.round((chartView.count||all.length*.25)*1.35));drawProfessionalChart($('priceChart'),all)});
+$('chartZoomOut')?.addEventListener('click',()=>{const all=chartVisibleSeries(chartSeries(metrics(activeSymbol())?.a||[]));chartView.count=Math.min(all.length,Math.round((chartView.count||all.length*.25)*1.35));drawProfessionalChart($('priceChart'),all)});
 $('chartInterval')?.addEventListener('change',e=>{
  chartInterval=e.target.value;chartView={count:null,endOffset:0};
  drawProfessionalChart($('priceChart'),metrics(activeSymbol())?.a||[]);
