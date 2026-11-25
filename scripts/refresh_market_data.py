@@ -92,7 +92,7 @@ def request_page(symbol, exchange, start_date, end_date, page):
             "Accept": "application/json, text/javascript, */*; q=0.01",
         },
     )
-    with urlopen(request, timeout=30) as response:
+    with urlopen(request, timeout=60) as response:
         payload = json.loads(response.read().decode("utf-8-sig"))
 
     if not payload.get("Success", True):
@@ -160,7 +160,7 @@ def fetch_history(symbol, exchange, start_date, end_date):
             break
         if len(rows) < PAGE_SIZE:
             break
-        time.sleep(0.35)
+        time.sleep(0.5)
 
     all_rows.sort(key=lambda row: row["date"])
     if not all_rows:
@@ -297,7 +297,7 @@ def main():
 
     # CafeF calls are independent. Bounded concurrency prevents a slow/timeout
     # ticker from making all other symbols wait in series.
-    worker_count = min(4, len(symbols))
+    worker_count = min(2, len(symbols))
     print(f"Refreshing {len(symbols)} stocks with bounded concurrency={worker_count}")
     with ThreadPoolExecutor(max_workers=worker_count) as pool:
         futures = {pool.submit(refresh_one_stock, symbol): symbol for symbol in symbols}
