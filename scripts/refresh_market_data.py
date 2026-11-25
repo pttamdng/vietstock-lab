@@ -1,6 +1,7 @@
 import json
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -249,25 +250,24 @@ def main():
     errors = []
     refreshed_stocks = set()
 
-    symbols = config.get("stocks", [])
+    symbols = [str(item).strip().upper() for item in config.get("stocks", []) if str(item).strip()]
+    if not symbols:
+        raise RuntimeError("Watchlist từ Cloudflare Worker đang rỗng; dừng để không chạy cập nhật chỉ số giả như đã tải cổ phiếu.")
+
     configured_exchanges = {
         str(symbol).strip().upper(): str(exchange).strip().upper()
         for symbol, exchange in (config.get("exchanges") or {}).items()
     }
     valid_exchanges = {"HOSE", "HNX", "UPCOM"}
-    for symbol in symbols:
-        symbol = str(symbol).strip().upper()
-        if not symbol:
-            continue
+
+    def refresh_one_stock(symbol):
+        symbol_started = time.perf_counter()
         exchange = configured_exchanges.get(
             symbol, EXCHANGE_BY_SYMBOL.get(symbol, "HOSE")
         )
-        if exchange not in valid_exchanges:
-            errors.append(f"{symbol}: sàn không hợp lệ '{exchange}', bỏ qua mã.")
-            print(f"SOURCE ERROR: {symbol}: invalid exchange '{exchange}'")
-            continue
-        symbol_started = time.perf_counter()
         old_rows = previous_stocks.get(symbol) or []
+        if exchange not in valid_exchanges:
+            return symbol, None, 0, f"Invalid exchange '{exchange}'", time.perf_counter() - symbol_started
         fetch_start = incremental_start(old_rows, start_date)
         mode = "incremental" if old_rows else "full backfill"
         try:
@@ -287,20 +287,43 @@ def main():
             merged_rows = merge_rows(old_rows, fresh_rows)
             if not merged_rows:
                 raise RuntimeError(f"Không có dữ liệu cũ hoặc mới cho {symbol}")
-            stocks[symbol] = merged_rows
-            refreshed_stocks.add(symbol)
             print(
                 f"SUCCESS {symbol}: +{len(fresh_rows)} fetched, {len(merged_rows)} total; "
-                f"first={merged_rows[0]['date']}, last={merged_rows[-1]['date']}; "
                 f"elapsed={time.perf_counter()-symbol_started:.1f}s"
             )
+            return symbol, merged_rows, len(fresh_rows), None, time.perf_counter() - symbol_started
         except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as error:
-            message = f"{symbol}: {type(error).__name__}: {error}"
-            errors.append(message)
-            print(f"SOURCE ERROR: {message}")
-            if old_rows:
-                print(f"KEEP previous snapshot {symbol}: {len(old_rows)} rows")
-        time.sleep(0.1)
+            return symbol, None, 0, f"{type(error).__name__}: {error}", time.perf_counter() - symbol_started
+
+    # CafeF calls are independent. Bounded concurrency prevents a slow/timeout
+    # ticker from making all other symbols wait in series.
+    worker_count = min(4, len(symbols))
+    print(f"Refreshing {len(symbols)} stocks with bounded concurrency={worker_count}")
+    with ThreadPoolExecutor(max_workers=worker_count) as pool:
+        futures = {pool.submit(refresh_one_stock, symbol): symbol for symbol in symbols}
+        for future in as_completed(futures):
+            symbol = futures[future]
+            try:
+                result_symbol, rows, fetched_count, error, elapsed = future.result()
+            except Exception as error:
+                result_symbol, rows, fetched_count, elapsed = symbol, None, 0, 0.0
+                error = f"{type(error).__name__}: {error}"
+            if error:
+                message = f"{result_symbol}: {error}"
+                errors.append(message)
+                print(f"SOURCE ERROR: {message}; elapsed={elapsed:.1f}s")
+                if previous_stocks.get(result_symbol):
+                    stocks[result_symbol] = previous_stocks[result_symbol]
+                    print(f"KEEP previous snapshot {result_symbol}: {len(previous_stocks[result_symbol])} rows")
+            elif rows:
+                stocks[result_symbol] = rows
+                refreshed_stocks.add(result_symbol)
+
+    if not refreshed_stocks:
+        print("ERROR: no configured stock was refreshed successfully; refusing to mark this run as successful.")
+        for message in errors:
+            print(message)
+        sys.exit(1)
 
     # Fetch indices from the free GitHub library. It uses DNSE first and
     # Vietcap as fallback, with normalized daily OHLCV and index units unscaled.
