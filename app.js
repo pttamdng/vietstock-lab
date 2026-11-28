@@ -38,8 +38,8 @@ function relativeStrengthMetrics(sym){
 // Draw Momentum and RS as two synchronized sub-panels below the price chart.
 function drawMomentumRS(canvas,sym){
  if(!canvas)return;
- const stock=candles(sym).filter(x=>!x.is_intraday&&/^\\d{4}-\\d{2}-\\d{2}$/.test(x.date)&&+x.close>0);
- const index=candles('VNINDEX').filter(x=>!x.is_intraday&&/^\\d{4}-\\d{2}-\\d{2}$/.test(x.date)&&+x.close>0);
+ const stock=candles(sym).filter(x=>!x.is_intraday&&/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&+x.close>0);
+ const index=candles('VNINDEX').filter(x=>!x.is_intraday&&/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&+x.close>0);
  const byDate=new Map(index.map(x=>[x.date,+x.close]));
  let pairs=stock.map(x=>({date:x.date,stock:+x.close,index:byDate.get(x.date)})).filter(x=>x.index>0).sort((a,b)=>a.date.localeCompare(b.date));
  const periods={20:[],60:[],120:[]};
